@@ -1,0 +1,5 @@
+[default]
+MONGO_DATABASE_URI='mongodb+srv://tarcisiocampos:UVubKcWzbC4ybKtG@zeev-cs.tkwhljx.mongodb.net/?retryWrites=true&w=majority&appName=Zeev-CS'
+
+[production]
+MONGO_DATABASE_URI='uri_de_producao'
