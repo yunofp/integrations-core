@@ -1,5 +1,10 @@
 [default]
 MONGO_DATABASE_URI='mongodb+srv://tarcisiocampos:UVubKcWzbC4ybKtG@zeev-cs.tkwhljx.mongodb.net/?retryWrites=true&w=majority&appName=Zeev-CS'
+ZEEV_BASE_URL='https://yuno.zeev.it/api/2'
 
 [production]
-MONGO_DATABASE_URI='uri_de_producao'
+MONGO_DATABASE_URI='mongodb+srv://tarcisiocampos:UVubKcWzbC4ybKtG@zeev-cs.tkwhljx.mongodb.net/?retryWrites=true&w=majority&appName=Zeev-CS'
+ZEEV_BASE_URL='https://yuno.zeev.it/api/2'
+ZEEV_EMAIL_LOGIN='tarcisio.campos@yunofp.com.br'
+ZEEV_PASSWORD_LOGIN='T0ny M0nt4n4, um prisioneiro politico de cuba'
+ZEEV_NEW_CLIENT_FLOW_ID=176

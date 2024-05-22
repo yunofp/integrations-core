@@ -1,4 +1,4 @@
 from dynaconf import FlaskDynaconf
 
 def init_app(app):
-  FlaskDynaconf(app)
+    FlaskDynaconf(app, settings_files=['settings.toml', '.secrets.toml'])
