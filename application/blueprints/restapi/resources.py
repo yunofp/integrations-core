@@ -1,6 +1,7 @@
 from flask import jsonify, abort
 from flask_restful import Resource
 from ..services.contracts import ContractsService
+from ..clients import zeevClient
 class RestApiResource(Resource):
   def get(self):
     return jsonify({'message': '> Api is alive! <'})
@@ -10,5 +11,6 @@ class RestApiResource(Resource):
     
 class ContractsResource(Resource):
   def post(self):
-    self.service = ContractsService({})
+    self.zeevClient = zeevClient.ZeevClient()
+    self.service = ContractsService(self.zeevClient, None)
     return self.service.process()

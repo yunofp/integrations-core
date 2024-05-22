@@ -6,8 +6,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ZeevClient:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
+        self.config = app.config
     def _getHeaders(self, token=None, contentType='application/json'):
         headers = {
             'Content-Type': contentType
