@@ -1,14 +1,18 @@
 
+import logging
+import requests
+logger = logging.getLogger(__name__)
 class ContractsService:
-  def __init__(self, zeevClient, ProcessedRequestRepository):
+  def __init__(self, zeevClient, processedRequestRepository):
     self.zeevClient = zeevClient
+    self.processedRequestRepository = processedRequestRepository
   
-  def process(self,requestId):
+  def processContract(self,requestId):
     zeevToken = self.zeevClient.generateZeevToken()
     print(zeevToken)
-    # instanceProcess = getServiceType(requestId, zeevToken)
-    # envelopeId = createEnvelope()
-    # instanceProcess = formatServiceType(instanceProcess)
+    instanceProcess = getServiceType(requestId, zeevToken)
+    envelopeId = createEnvelope()
+    instanceProcess = formatServiceType(instanceProcess)
 
     # if instanceProcess == "Grow":
     
@@ -111,4 +115,87 @@ class ContractsService:
     
     # else:
     #     print("Não foi possível gerar o documento")
+    return instanceProcess
+  def _isNewClientYuno(phrase):
+    expectedPhrase = "new client yuno v. 1"
+    phrase = phrase.lower()
+    return phrase == expectedPhrase
+  
+  def _insertSuccessfullyProcessedRequest(self, requestId, serviceType):
+    try:
+      self.processedRequestRepository.insertOne({
+          'tryAgain': False,
+          'validNewClientApp': True,
+          'contractsName': serviceType,
+          'createdAt': datetime.now(),
+          'requestId': requestId
+      })
+    except Exception as e:
+      logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + requestId, exc_info=True)
+  
+  def _insertFailedProcessedRequest(self, requestId, tryAgain,validNewClientApp):
+    try:
+      self.processedRequestRepository.insertOne({
+          'tryAgain': tryAgain,
+          'createdAt': datetime.now(),
+          'requestId': requestId,
+          'validNewClientApp': validNewClientApp
+      })
+    except Exception as e:
+      logger.error("_insertFailedProcessedRequest | Error inserting failed processed request:" + requestId, exc_info=True)
+  def run(self):
+    
+    lastProcessedRequest = self.processedRequestRepository.getLastProcessedRequest()
+    if 'requestId' in lastProcessedRequest:
+      return
+    
+    newRequestId = lastProcessedRequest['requestId'] + 1
+    token = self.zeevClient.generateZeevToken()
+    stopId = self.getStopInstanceId(lastProcessedRequest.get('requestId'), token)
 
+    if (lastProcessedRequest['requestId'] + 1) == stopId:
+        return
+  
+    data = self.zeevClient.secondStepContractPost(newRequestId, token)
+
+    if data:
+        requestName = data[0].get("requestName")
+        if self._isNewClientYuno(requestName):
+            if data[0].get("formFields")[0].get("value"):
+                  try:
+                    serviceType = self.processContract(newRequestId)
+                    self._insertSuccessfullyProcessedRequest(newRequestId, serviceType)
+                    self.run()
+                  except Exception as e:
+                    self._insertFailedProcessedRequest(newRequestId, True)
+                    logger.error("run | Error processing contract:" + newRequestId, exc_info=True)
+                    self.run()
+        else:
+          self._insertFailedProcessedRequest(newRequestId, False, False) 
+          self.run()
+    else:
+        self._insertFailedProcessedRequest(newRequestId, False, False) 
+        self.run()
+
+    
+  def getStopInstanceId(self, id, zeevToken):
+    
+    stop = True
+    stopId = id
+    try:
+        while stop:
+            response = self.zeevClient.instanceIdRequest(stopId, zeevToken)
+            if response.status_code == 200:
+                stopId += 1
+            else:
+                stop = False
+                return stopId
+    except requests.exceptions.RequestException as e:
+        logger.error("getStopInstanceId | Error during instance ID request:", exc_info=True)
+        raise
+    except Exception as e:
+        logger.error("getStopInstanceId | An unexpected error occurred:", exc_info=True)
+        raise
+
+              
+      

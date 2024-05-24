@@ -17,8 +17,8 @@ class ZeevClient:
         return headers
     def generateZeevToken(self):
         try:
-            zeev_base_url = self.config['ZEEV_BASE_URL']
-            url = f"{zeev_base_url}/tokens"
+            zeevBaseUrl = self.config['ZEEV_BASE_URL']
+            url = f"{zeevBaseUrl}/tokens"
             email = self.config['ZEEV_EMAIL_LOGIN']
             password = self.config['ZEEV_PASSWORD_LOGIN']
             
