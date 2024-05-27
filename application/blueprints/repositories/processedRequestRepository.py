@@ -13,4 +13,13 @@ class ProcessedRequestsRepository:
     def insertOne(self, data):
         result = self.collection.insert_one(data)
         return result
+    
+    def getManyRetries(self):
+        processedRequestsRetries = self.collection.find({'tryAgain': True})
+        listProcessedRequestsRetries = list(processedRequestsRetries)
+        return listProcessedRequestsRetries
+    
+    def updateOne(self, requestId, data):
+        result = self.collection.update_one({'requestId': requestId}, {'$set': data})
+        return result
         

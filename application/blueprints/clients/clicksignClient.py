@@ -6,7 +6,7 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
-class ZeevClicksign:
+class ClicksignClient:
     def __init__(self):
         self.config = app.config
         self.token = self.config['ZEEV_BASE_URL']
