@@ -8,3 +8,5 @@ ZEEV_BASE_URL='https://yuno.zeev.it/api/2'
 ZEEV_EMAIL_LOGIN='tarcisio.campos@yunofp.com.br'
 ZEEV_PASSWORD_LOGIN='T0ny M0nt4n4, um prisioneiro politico de cuba'
 ZEEV_NEW_CLIENT_FLOW_ID=176
+CLICKSIGN_BASE_URL='https://app.clicksign.com/api/v3'
+CLICKSIGN_TOKEN='e6598ab0-0bfa-444e-b971-1b09f0ef0c4e'

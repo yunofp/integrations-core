@@ -1,6 +1,7 @@
 
 import logging
 import requests
+from datetime import datetime
 logger = logging.getLogger(__name__)
 class ContractsService:
   def __init__(self, zeevClient, processedRequestRepository):
@@ -10,143 +11,159 @@ class ContractsService:
   def processContract(self,requestId):
     zeevToken = self.zeevClient.generateZeevToken()
     print(zeevToken)
-    instanceProcess = getServiceType(requestId, zeevToken)
+    instanceProcess = self.zeevClient.getServiceType(requestId, zeevToken)
     envelopeId = createEnvelope()
     instanceProcess = formatServiceType(instanceProcess)
 
-    # if instanceProcess == "Grow":
+    if instanceProcess == "Grow":
     
-    #     growResponse = sendZeevPost(requestId, zeevToken)
-    #     growResponse2 = sendZeevPost2(requestId, zeevToken)
-    #     contractVariables = defineVariablesGrow(growResponse, growResponse2)
-    #     filename = formatFilename(contractVariables)
-    #     documentId = sendClickSignPostGrow(contractVariables, envelopeId, filename)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
-    #     cpf = formatCpf(contractVariables.get("cpfDoTitular"))
-    #     email = contractVariables.get("email")
-    #     birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
-    #     signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-    #     addQualificationRequirements(envelopeId, signerId, documentId)
-    #     addAuthRequirements(envelopeId, signerId, documentId)
-    #     activateEnvelope(envelopeId)
-    #     notificateEnvelope(envelopeId)
+        growResponse = sendZeevPost(requestId, zeevToken)
+        growResponse2 = sendZeevPost2(requestId, zeevToken)
+        contractVariables = defineVariablesGrow(growResponse, growResponse2)
+        filename = formatFilename(contractVariables)
+        documentId = sendClickSignPostGrow(contractVariables, envelopeId, filename)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+        cpf = formatCpf(contractVariables.get("cpfDoTitular"))
+        email = contractVariables.get("email")
+        birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
+        signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+        addQualificationRequirements(envelopeId, signerId, documentId)
+        addAuthRequirements(envelopeId, signerId, documentId)
+        activateEnvelope(envelopeId)
+        notificateEnvelope(envelopeId)
 
-    #     filename =  datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " +  contractVariables.get("qualOTipoDeTrabalho") + " " + contractVariables.get("nomeCompletoDoTitular") + ".doc"
-    #     downloadContract(clicksignContract, filename)
-    #     signerName = contractVariables.get("nomeCompletoDoTitular")
-    #     contractUrl = uploadContractToDrive(filename, contractVariables.get("email"))
-    #     print(contractUrl)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
-    #     print(phoneNum + " " + signerName)
-    #     signResponse = sendWhatsappSign(signerName, contractUrl, phoneNum)
-    #     return sendZeevPost
+        filename =  datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " +  contractVariables.get("qualOTipoDeTrabalho") + " " + contractVariables.get("nomeCompletoDoTitular") + ".doc"
+        downloadContract(clicksignContract, filename)
+        signerName = contractVariables.get("nomeCompletoDoTitular")
+        contractUrl = uploadContractToDrive(filename, contractVariables.get("email"))
+        print(contractUrl)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+        print(phoneNum + " " + signerName)
+        signResponse = sendWhatsappSign(signerName, contractUrl, phoneNum)
+        return sendZeevPost
 
-    # elif instanceProcess == "Wealth":
+    elif instanceProcess == "Wealth":
 
-    #     wealthResponse = sendZeevPost(requestId, zeevToken)
-    #     wealthResponse2 = sendZeevPost2(requestId, zeevToken)
-    #     contractVariables = defineVariablesWealth(wealthResponse, wealthResponse2)
-    #     filename = formatFilename(contractVariables)
-    #     documentId = sendClickSignPostWealth(contractVariables, envelopeId, filename)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
-    #     cpf = formatCpf(contractVariables.get("cpfDoTitular"))
-    #     email = contractVariables.get("email")
-    #     birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
-    #     signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-    #     addQualificationRequirements(envelopeId, signerId, documentId)
-    #     addAuthRequirements(envelopeId, signerId, documentId)
-    #     activateEnvelope(envelopeId)
-    #     notificateEnvelope(envelopeId)
+        wealthResponse = sendZeevPost(requestId, zeevToken)
+        wealthResponse2 = sendZeevPost2(requestId, zeevToken)
+        contractVariables = defineVariablesWealth(wealthResponse, wealthResponse2)
+        filename = formatFilename(contractVariables)
+        documentId = sendClickSignPostWealth(contractVariables, envelopeId, filename)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+        cpf = formatCpf(contractVariables.get("cpfDoTitular"))
+        email = contractVariables.get("email")
+        birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
+        signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+        addQualificationRequirements(envelopeId, signerId, documentId)
+        addAuthRequirements(envelopeId, signerId, documentId)
+        activateEnvelope(envelopeId)
+        notificateEnvelope(envelopeId)
 
-    #     return sendZeevPost
+        return sendZeevPost
     
-    # elif instanceProcess == "Work":
+    elif instanceProcess == "Work":
 
-    #     workResponse = sendZeevPost(requestId, zeevToken)
-    #     workResponse2 = sendZeevPost2(requestId, zeevToken)
-    #     contractVariables = defineVariablesWork(workResponse, workResponse2)
-    #     filename = formatFilename(contractVariables)
-    #     documentId = sendClickSignPostWork(contractVariables, envelopeId, filename)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDaEmpresa"))
-    #     cpf = formatCpf(contractVariables.get("cnpj"))
-    #     email = contractVariables.get("emailDeContato")
-    #     birthdate = formatBirthdate(contractVariables.get("dataDeNascimentoDoResponsavel"))
-    #     signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-    #     addQualificationRequirements(envelopeId, signerId, documentId)
-    #     addAuthRequirements(envelopeId, signerId, documentId)
-    #     activateEnvelope(envelopeId)
-    #     notificateEnvelope(envelopeId)
+        workResponse = sendZeevPost(requestId, zeevToken)
+        workResponse2 = sendZeevPost2(requestId, zeevToken)
+        contractVariables = defineVariablesWork(workResponse, workResponse2)
+        filename = formatFilename(contractVariables)
+        documentId = sendClickSignPostWork(contractVariables, envelopeId, filename)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDaEmpresa"))
+        cpf = formatCpf(contractVariables.get("cnpj"))
+        email = contractVariables.get("emailDeContato")
+        birthdate = formatBirthdate(contractVariables.get("dataDeNascimentoDoResponsavel"))
+        signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+        addQualificationRequirements(envelopeId, signerId, documentId)
+        addAuthRequirements(envelopeId, signerId, documentId)
+        activateEnvelope(envelopeId)
+        notificateEnvelope(envelopeId)
 
-    #     return sendZeevPost
+        return sendZeevPost
 
-    # elif instanceProcess == "Grow & Wealth":
+    elif instanceProcess == "Grow & Wealth":
 
-    #     growResponse = sendZeevPost(requestId, zeevToken)
-    #     growResponse2 = sendZeevPost2(requestId, zeevToken)
-    #     contractVariables = defineVariablesGrow(growResponse, growResponse2)
-    #     filename = formatFilename(contractVariables)
-    #     documentId = sendClickSignPostGrow(contractVariables, envelopeId, filename)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
-    #     cpf = formatCpf(contractVariables.get("cpfDoTitular"))
-    #     email = contractVariables.get("email")
-    #     birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
-    #     signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-    #     addQualificationRequirements(envelopeId, signerId, documentId)
-    #     addAuthRequirements(envelopeId, signerId, documentId)
-    #     activateEnvelope(envelopeId)
-    #     notificateEnvelope(envelopeId)
+        growResponse = sendZeevPost(requestId, zeevToken)
+        growResponse2 = sendZeevPost2(requestId, zeevToken)
+        contractVariables = defineVariablesGrow(growResponse, growResponse2)
+        filename = formatFilename(contractVariables)
+        documentId = sendClickSignPostGrow(contractVariables, envelopeId, filename)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+        cpf = formatCpf(contractVariables.get("cpfDoTitular"))
+        email = contractVariables.get("email")
+        birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
+        signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+        addQualificationRequirements(envelopeId, signerId, documentId)
+        addAuthRequirements(envelopeId, signerId, documentId)
+        activateEnvelope(envelopeId)
+        notificateEnvelope(envelopeId)
 
-    #     wealthResponse = sendZeevPost(requestId, zeevToken)
-    #     wealthResponse2 = sendZeevPost2(requestId, zeevToken)
-    #     contractVariables = defineVariablesWealth(wealthResponse, wealthResponse2)
-    #     filename = formatFilename(contractVariables)
-    #     documentId = sendClickSignPostWealth(contractVariables, envelopeId, filename)
-    #     phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
-    #     cpf = formatCpf(contractVariables.get("cpfDoTitular"))
-    #     email = contractVariables.get("email")
-    #     birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
-    #     signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-    #     addQualificationRequirements(envelopeId, signerId, documentId)
-    #     addAuthRequirements(envelopeId, signerId, documentId)
-    #     activateEnvelope(envelopeId)
-    #     notificateEnvelope(envelopeId)
+        wealthResponse = sendZeevPost(requestId, zeevToken)
+        wealthResponse2 = sendZeevPost2(requestId, zeevToken)
+        contractVariables = defineVariablesWealth(wealthResponse, wealthResponse2)
+        filename = formatFilename(contractVariables)
+        documentId = sendClickSignPostWealth(contractVariables, envelopeId, filename)
+        phoneNum = clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+        cpf = formatCpf(contractVariables.get("cpfDoTitular"))
+        email = contractVariables.get("email")
+        birthdate = formatBirthdate(contractVariables.get("dataDeNascimento"))
+        signerId = addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+        addQualificationRequirements(envelopeId, signerId, documentId)
+        addAuthRequirements(envelopeId, signerId, documentId)
+        activateEnvelope(envelopeId)
+        notificateEnvelope(envelopeId)
     
-    #     return sendZeevPost
+        return sendZeevPost
     
-    # else:
-    #     print("Não foi possível gerar o documento")
+    else:
+        print("Não foi possível gerar o documento")
     return instanceProcess
   def _isNewClientYuno(phrase):
     expectedPhrase = "new client yuno v. 1"
     phrase = phrase.lower()
     return phrase == expectedPhrase
   
-  def _insertSuccessfullyProcessedRequest(self, requestId, serviceType):
+  def _insertSuccessfullyProcessedRequest(self, requestId, serviceType,documentId):
     try:
       self.processedRequestRepository.insertOne({
           'tryAgain': False,
-          'validNewClientApp': True,
-          'contractsName': serviceType,
-          'createdAt': datetime.now(),
-          'requestId': requestId
+          'type': serviceType,
+          'validNewClient': True
+          'requestId': requestId,
+          'documentId': documentId,
+          'status': {
+            'name': 'send',
+            'descritpion': 'delivered'
+          }
+          'createdAt': date.utcnow()
       })
     except Exception as e:
       logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + requestId, exc_info=True)
   
-  def _insertFailedProcessedRequest(self, requestId, tryAgain,validNewClientApp):
-    try:
-      self.processedRequestRepository.insertOne({
-          'tryAgain': tryAgain,
-          'createdAt': datetime.now(),
-          'requestId': requestId,
-          'validNewClientApp': validNewClientApp
-      })
-    except Exception as e:
-      logger.error("_insertFailedProcessedRequest | Error inserting failed processed request:" + requestId, exc_info=True)
+
+
+  def _insertFailedProcessedRequest(self, requestId, tryAgain, errorMessage, statusName=None, validNewClient=False):
+      try:
+          document = {
+              'tryAgain': tryAgain,
+              'requestId': requestId,
+              'createdAt': datetime.now(datetime.UTC),
+              'validNewClient': validNewClient
+          }
+          
+          if statusName:
+              document['status'] = {
+                  'name': statusName,
+                  'description': errorMessage
+              }
+          
+          self.processedRequestRepository.insertOne(document)
+      except Exception as e:
+          logger.error("_insertFailedProcessedRequest | Error inserting failed processed request:" + requestId, exc_info=True)
+
   def run(self):
     
     lastProcessedRequest = self.processedRequestRepository.getLastProcessedRequest()
-    if 'requestId' in lastProcessedRequest:
+    if 'requestId' not in lastProcessedRequest:
       return
     
     newRequestId = lastProcessedRequest['requestId'] + 1
@@ -161,17 +178,21 @@ class ContractsService:
     if data:
         requestName = data[0].get("requestName")
         if self._isNewClientYuno(requestName):
-            if data[0].get("formFields")[0].get("value"):
+            readyToProcess = data[0].get("formFields")[0].get("value")
+            if readyToProcess:
                   try:
                     serviceType = self.processContract(newRequestId)
                     self._insertSuccessfullyProcessedRequest(newRequestId, serviceType)
                     self.run()
                   except Exception as e:
-                    self._insertFailedProcessedRequest(newRequestId, True)
+                    self._insertFailedProcessedRequest(newRequestId, True, e.__str__(), 'error', True)
                     logger.error("run | Error processing contract:" + newRequestId, exc_info=True)
                     self.run()
+            else:
+              self._insertFailedProcessedRequest(newRequestId, False, None, None, True) 
+              self.run()
         else:
-          self._insertFailedProcessedRequest(newRequestId, False, False) 
+          self._insertFailedProcessedRequest(newRequestId, False) 
           self.run()
     else:
         self._insertFailedProcessedRequest(newRequestId, False, False) 
