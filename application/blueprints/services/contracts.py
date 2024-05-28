@@ -154,9 +154,9 @@ class ContractsService:
     stopId = self.getStopInstanceId(newRequestId, token)
 
     if (newRequestId) == stopId:
-        print('parouuu')
+        logger.info("run | stopping at stopId:" + str(stopId))
         return
-    print('Continuou a execucao')
+    logger.info("run | continuing at newRequestId:" + str(newRequestId))
     data = self.zeevClient.secondStepContractPost(newRequestId, token)
 
     if data:
