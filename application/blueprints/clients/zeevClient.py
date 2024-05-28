@@ -23,7 +23,7 @@ class ZeevClient:
             password = self.config['ZEEV_PASSWORD_LOGIN']
             
             data = {
-                "email": email,
+                "login": email,
                 "password": password
             }
             
@@ -188,14 +188,18 @@ class ZeevClient:
     def _contractDataRequest(self, instanceId, token, data):
         try:
             headers = self._getHeaders(token)
-            url = self._getDefaultInstanceReportUrl(instanceId)
-            data = self._firstStepContractDataRequest()
+            url = self._getDefaultInstanceReportUrl()
+            data = self._firstStepContractDataRequest(instanceId)
             response = requests.post(url, json=data, headers=headers)
 
             if response.status_code == 200:
                 json_response = response.text.replace("'", '"')
                 zeevResponse = json.loads(json_response)
-                return zeevResponse[0].get("formFields")
+                hasElements = len(zeevResponse) > 0 and "formFields" in zeevResponse[0]
+                if hasElements:
+                    return zeevResponse[0].get("formFields")
+                else:
+                    return []
             else:
                 response.raise_for_status()
                 raise Exception(f"fullContractData | error: {response.status_code}")
@@ -203,7 +207,7 @@ class ZeevClient:
             logger.error("fullContractData | Error during request:", exc_info=True)
             raise
     def firstStepContractPost(self, instanceId, token):
-        data = self._firstStepContractDataRequest()
+        data = self._firstStepContractDataRequest(instanceId)
         return self._contractDataRequest(instanceId, token, data)
     def secondStepContractPost(self, instanceId, token):
         data = self._secondStepContractDataRequest(instanceId)

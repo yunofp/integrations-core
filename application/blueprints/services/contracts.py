@@ -1,15 +1,25 @@
 
 import logging
 import requests
-from datetime import datetime
-from utils import formatting, dataProcessing
+from datetime import datetime, timezone
+from ..utils import formatting, dataProcessing
+from flask import current_app as app
 logger = logging.getLogger(__name__)
 class ContractsService:
   def __init__(self, zeevClient, processedRequestRepository, clickSignClient):
     self.zeevClient = zeevClient
-    self.processedRequestRepository = processedRequestRepository,
+    self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
+    self.config = app.config
+    
   
+  def listManyRetries(self):
+    try:
+      result = self.processedRequestRepository.getManyRetries()
+      return result
+    except Exception as e:
+      logger.error("listManyRetries | Error listing processed requests:" + str(e))
+    
   def processContract(self, requestId):
     zeevToken = self.zeevClient.generateZeevToken()
     instanceProcess = self.zeevClient.getServiceType(requestId, zeevToken)
@@ -50,10 +60,18 @@ class ContractsService:
       contractVariables = dataProcessing.defineVariablesWork(workResponse, workResponse2)
       return self._processContractSteps(contractVariables, envelopeId)
 
+  def _definePhoneNumber(self, contractVariables):
+    if self.config.get('PHONE_NUMBER_DEBUG'):
+      phoneNum = self.config.get('PHONE_NUMBER_DEBUG')
+      print('Pegando telefone do tarcisio')
+    else:
+      phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+    return phoneNum
   def _processContractSteps(self, contractVariables, envelopeId):
+      phoneNum = self._definePhoneNumber(contractVariables)
+      logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFilename(contractVariables)
       documentId = self.clickSignClient.sendClickSignPost(contractVariables, envelopeId, filename)
-      phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
       cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
       email = contractVariables.get("email")
       birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
@@ -71,16 +89,17 @@ class ContractsService:
   
   def _insertSuccessfullyProcessedRequest(self, requestId, serviceType, documentsId):
     try:
+      status = {
+        'name': 'send',
+        'descritpion': 'delivered'
+      }
       self.processedRequestRepository.insertOne({
           'tryAgain': False,
           'type': serviceType,
-          'validNewClient': True
+          'validNewClient': True,
           'requestId': requestId,
           'documentId': documentsId,
-          'status': {
-            'name': 'send',
-            'descritpion': 'delivered'
-          }
+          'status': status,
           'createdAt': date.utcnow()
       })
     except Exception as e:
@@ -88,17 +107,18 @@ class ContractsService:
   
   def _updateSuccessfullyProcessedRequest(self, requestId, serviceType, documentsId):
     try:
+      status = {
+        'name': 'send',
+        'descritpion': 'delivered'
+      }
       self.processedRequestRepository.updateOne(requestId, {
           'tryAgain': False,
           'type': serviceType,
-          'validNewClient': True
+          'validNewClient': True,
           'requestId': requestId,
           'documentsId': documentsId,
-          'status': {
-            'name': 'send',
-            'descritpion': 'delivered'
-          }
-          'updatedAt': datetime.now(datetime.UTC)
+          'status': status,
+          'updatedAt': datetime.now(timezone.utc)
       })
     except Exception as e:
       logger.error("_updateSuccessfullyProcessedRequest | Error updating successfully processed request:" + requestId, exc_info=True)
@@ -108,7 +128,7 @@ class ContractsService:
           document = {
               'tryAgain': tryAgain,
               'requestId': requestId,
-              'createdAt': datetime.now(datetime.UTC),
+              'createdAt': datetime.now(timezone.utc),
               'validNewClient': validNewClient
           }
           
@@ -126,15 +146,17 @@ class ContractsService:
     
     lastProcessedRequest = self.processedRequestRepository.getLastProcessedRequest()
     if 'requestId' not in lastProcessedRequest:
+      logger.warn("run | lastProcessedRequest not found")
       return
     
     newRequestId = lastProcessedRequest['requestId'] + 1
     token = self.zeevClient.generateZeevToken()
-    stopId = self.getStopInstanceId(lastProcessedRequest.get('requestId'), token)
+    stopId = self.getStopInstanceId(newRequestId, token)
 
-    if (lastProcessedRequest['requestId'] + 1) == stopId:
+    if (newRequestId) == stopId:
+        print('parouuu')
         return
-  
+    print('Continuou a execucao')
     data = self.zeevClient.secondStepContractPost(newRequestId, token)
 
     if data:
@@ -173,23 +195,30 @@ class ContractsService:
             self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
     
   def getStopInstanceId(self, id, zeevToken):
-    
-    stop = True
-    stopId = id
-    try:
-        while stop:
-            response = self.zeevClient.instanceIdRequest(stopId, zeevToken)
-            if response.status_code == 200:
-                stopId += 1
-            else:
-                stop = False
-                return stopId
-    except requests.exceptions.RequestException as e:
-        logger.error("getStopInstanceId | Error during instance ID request:", exc_info=True)
-        raise
-    except Exception as e:
-        logger.error("getStopInstanceId | An unexpected error occurred:", exc_info=True)
-        raise
+      stopId = id
+      invalid_attempts = 0
+      max_invalid_attempts = 5
 
+      try:
+          while invalid_attempts < max_invalid_attempts:
+              response = self.zeevClient.instanceIdRequest(stopId, zeevToken)
               
+              print('responseeeeee>>>>>>', response.status_code, 'stopID: ', stopId)
+              
+              if response.status_code == 200:
+                  return stopId  # Retorna imediatamente o primeiro ID válido encontrado
+              else:
+                  invalid_attempts += 1
+                  stopId += 1
+
+          return stopId  # Retorna o ID onde parou após 5 tentativas inválidas
+
+      except requests.exceptions.RequestException as e:
+          logger.error("getStopInstanceId | Error during instance ID request:", exc_info=True)
+          raise
+      except Exception as e:
+          logger.error("getStopInstanceId | An unexpected error occurred:", exc_info=True)
+          raise
+
+      
       

@@ -2,7 +2,6 @@ import requests
 import json
 from flask import current_app as app
 import logging
-import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -212,36 +211,7 @@ class ClicksignClient:
         except requests.exceptions.RequestException as e:
             logger.error("sendClickSignPostWork: Error while sending document: " + str(e))
             raise
-
-
-    def sendWhatsappSign(self,signerName, urlDrive, phoneNum):
-        try:
-            
-            url = self.clickSignBaseUrl + "/acceptance_term/whatsapps?access_token=" + self.token
-
-            data = {
-                "acceptance_term": {
-                    "name": "Assinatura do Contrato do seu Plano Yuno",
-                    "sender_name": "Yuno FP",
-                    "sender_phone": "62981331262",
-                    "content": "Olá, este é o aceite via Whatsapp do seu novo plano de consultoria da Yuno, o acesso ao documento foi enviado para o email informado pelo contratante. Segue o link do documento do contrato no Google Drive: " + urlDrive,
-                    "signer_phone": phoneNum,
-                    "signer_name": signerName
-                }
-            }
-
-            response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                signResponse = json.loads(json_response)
-                return signResponse
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("sendWhatsappSign: Error while sending whatsapp: " + str(e))
-            raise
-
+        
     def addSignerToEnvelope(self, envelopeId, dataVariables, cpf, birthdate, phoneNum, email):
         try:
         
@@ -254,7 +224,7 @@ class ClicksignClient:
                         "name":dataVariables.get("nomeCompletoDoTitular"),
                         "birthday":birthdate,
                         "email":email,
-                        "phone_number":"64993456689",
+                        "phone_number":phoneNum,
                         "has_documentation":True,
                         "documentation":cpf,
                         "refusable":True,  
