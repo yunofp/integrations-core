@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 def formatCpf(num):
     if len(num) == 14:

@@ -20,11 +20,10 @@ class ContractsService:
     except Exception as e:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
-  def processContract(self, contractValues):
+  def processContract(self, requestId, contractValues):
     envelopeId = self.clickSignClient.createEnvelope()
     workTypeObject = next((item for item in contractValues if item["name"] == "qualOTipoDeTrabalho"), None)
     
-    requestId = contractValues['id']
     workType = workTypeObject['value']
     
     if not workTypeObject:
@@ -36,21 +35,21 @@ class ContractsService:
     
     if workTypeFormatted == "Grow":
       contractVariables = dataProcessing.defineVariablesGrow(contractValues)
-      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documentsId.append(documentId)
     elif workTypeFormatted == "Wealth":
       contractVariables = dataProcessing.defineVariablesWealth(contractValues)
-      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documentsId.append(documentId)
     elif workTypeFormatted == "Work":
       contractVariables = dataProcessing.defineVariablesWork(contractValues)
-      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documentsId.append(documentId)
     elif workTypeFormatted == "Grow & Wealth":
       contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
       contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
-      documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId)
-      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId)
+      documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, workTypeFormatted)
+      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId, workTypeFormatted)
       documentsId.extend([documentIdGrow, documentIdWealth])
     else:
         logger.error("processContract | Unknown service type:" + workTypeFormatted)
@@ -65,15 +64,22 @@ class ContractsService:
     else:
       phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
     return phoneNum
-  def _processContractSteps(self, contractVariables, envelopeId):
+  def _processContractSteps(self, contractVariables, envelopeId, contractType):
       phoneNum = self._definePhoneNumber(contractVariables)
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFilename(contractVariables)
-      documentId = self.clickSignClient.sendClickSignPost(contractVariables, envelopeId, filename)
+      documentId = None
+      if contractType == 'grow':
+        documentId = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
+      elif contractType == 'wealth':
+        documentId = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
+      elif contractType == 'work':
+        documentId = self.clickSignClient.sendClickSignPostWork(contractVariables, envelopeId, filename)
+   
       cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
       email = contractVariables.get("email")
       birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
-      signerId = formatting.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+      signerId =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
       self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
       self.clickSignClient.activateEnvelope(envelopeId)
@@ -98,7 +104,7 @@ class ContractsService:
           'requestId': requestId,
           'documentId': documentsId,
           'status': status,
-          'createdAt': date.utcnow()
+          'createdAt': datetime.now(timezone.utc)
       })
     except Exception as e:
       logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + requestId, exc_info=True)
@@ -224,7 +230,7 @@ class ContractsService:
     contractsRequests = []
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      now = datetime(2024, 5, 28)
+      now = datetime(2024, 5, 24)
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
     except requests.exceptions.RequestException as e:
@@ -233,15 +239,22 @@ class ContractsService:
     if not contractsRequests:
       logger.info("processAllContracts | No contracts found to process")
       return
+    
     logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
     
     for contractRequest in contractsRequests:
       contractValues = contractRequest['formFields']
-    
+      isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
+      requestId = contractRequest['id']
+      
+      if not isContractCompletelyFilledToProcess:
+        logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
+        self._insertFailedProcessedRequest(requestId, True, None, None, True)
+        continue
       try:
-       
-        serviceType, documentsId = self.processContract(contractValues)
-        self._insertSuccessfullyProcessedRequest(contractRequest['requestId'], serviceType, documentsId)
+  
+        serviceType, documentsId = self.processContract(requestId ,contractValues)
+        self._insertSuccessfullyProcessedRequest(requestId, serviceType, documentsId)
       except Exception as e:
-        self._insertFailedProcessedRequest(contractRequest['requestId'], False, e.__str__(), 'error', True)
-        logger.error("processAllContracts | Error processing contract:" + contractRequest['requestId'], exc_info=True)
+        self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
+        logger.error("processAllContracts | Error processing contract:" + str(requestId), exc_info=True)
