@@ -17,7 +17,7 @@ class ContractsResource(Resource):
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
     self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient)
-    self.service.run()
+    return self.service.processAllContracts()
     
 class ContractsResourceRetry(Resource):
   

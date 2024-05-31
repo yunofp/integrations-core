@@ -2,6 +2,7 @@ import requests
 import json
 from flask import current_app as app
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -156,35 +157,88 @@ class ZeevClient:
         }
         return data
     def _secondStepContractDataRequest(self, instanceId):
-        data = {
-            "instanceId": instanceId,
-            "flowId": 176,
-            "formFieldNames": [
-                "dataDeNascimentoDoTitular",
-                "cPFCPNJ",
-                "endereco",
-                "bairro",
-                "cidade",
-                "uf",
-                "cEP",
-                "nomeDoConjugeResponsavelPelaEmpresa",
-                "email",
-                "dataDeNascimento",
-                "prazoDeVigencia",
-                "origemInterna",
-                "origemExterna",
-                "dataDoPagamentoDaImplantacao",
-                "formaDePagamentoDaImplantacao",
-                "diaDaCobrancaRecorrente",
-                "obervacao",
-                "autorizacaoDeCobrancaPelaCorretora",
-                "haveraVinculacaoContratoPai",
-                "numeroDoContratoPai",
-                "cPF",
-                "telefone"
-            ]
+        instancesFilter = {
+            # "instanceId": 1374,
+            "pageNumber": 1,
+            "flowId": 176
+            # "formFieldNames": [
+            #     "dataDeNascimentoDoTitular",
+            #     "cPFCPNJ",
+            #     "endereco",
+            #     "bairro",
+            #     "cidade",
+            #     "uf",
+            #     "cEP",
+            #     "nomeDoConjugeResponsavelPelaEmpresa",
+            #     "email",
+            #     "dataDeNascimento",
+            #     "prazoDeVigencia",
+            #     "origemInterna",
+            #     "origemExterna",
+            #     "dataDoPagamentoDaImplantacao",
+            #     "formaDePagamentoDaImplantacao",
+            #     "diaDaCobrancaRecorrente",
+            #     "obervacao",
+            #     "autorizacaoDeCobrancaPelaCorretora",
+            #     "haveraVinculacaoContratoPai",
+            #     "numeroDoContratoPai",
+            #     "cPF",
+            #     "telefone"
+            # ]
         }
-        return data
+        return instancesFilter
+    
+    def _mergeFormFieldNames(self):
+        form_field_names_1 = [
+            "quemEVoce", "qualOTipoDeTrabalho", "nomeDoIndicado", "q01", "q02", "q03",
+            "q04", "q05", "q06", "q07", "q08", "q09", "q10", "q11", "q12",
+            "valorDaRendaFamiliar", "pont01", "pont02", "pont03", "pont04",
+            "pont05", "pont06", "pont07", "pont08", "pont09", "pont10",
+            "pont11", "pont12", "pont13", "calcularTotal", "total",
+            "nomeDoCliente-Llaz", "contatoDoCliente", "emailDoCliente",
+            "sugestaoDeImplantacao", "valorDeImplantacao", "sugestaoDeFEE",
+            "valorDoFEE", "nomeDoCliente", "rendaMensalDoClientefamilia",
+            "patrimonioFinanceiro", "patrimonioImobilizado", "perfilOrcamentario",
+            "imovelQueMora", "estadoCivil", "profissaoDoTitular", "profissaoDoConjuge",
+            "numeroDeFilhos", "ramoDeAtividade", "nomeDosSocios",
+            "oClienteContratouAoMesmoTempoGrowWealth", "dataDoEnvioDoContrato",
+            "dataEmQueOClienteAssinaraOContrato", "horaEmQueAssinaraOContrato",
+            "qualOTipoDoContrato", "informeOCloser", "oClienteTambemFechouOContratoDeConsultoria",
+            "codcloserResponsavel", "dataDeNascimentoDoTitular", "cPFCPNJ",
+            "endereco", "bairro", "cidade", "uf", "cEP",
+            "nomeDoConjugeResponsavelPelaEmpresa", "email", "dataDeNascimento",
+            "prazoDeVigencia", "origemInterna", "origemExterna", "dataDoPagamentoDaImplantacao",
+            "formaDePagamentoDaImplantacao", "diaDaCobrancaRecorrente", "obervacao",
+            "autorizacaoDeCobrancaPelaCorretora", "haveraVinculacaoContratoPai",
+            "numeroDoContratoPai", "cPF", "telefone"
+        ]
+
+        form_field_names_2 = [
+            "dataDeNascimentoDoTitular", "cPFCPNJ", "endereco", "bairro",
+            "cidade", "uf", "cEP", "nomeDoConjugeResponsavelPelaEmpresa",
+            "email", "dataDeNascimento", "prazoDeVigencia", "origemInterna",
+            "origemExterna", "dataDoPagamentoDaImplantacao",
+            "formaDePagamentoDaImplantacao", "diaDaCobrancaRecorrente", "obervacao",
+            "autorizacaoDeCobrancaPelaCorretora", "haveraVinculacaoContratoPai",
+            "numeroDoContratoPai", "cPF", "telefone"
+        ]
+
+        uniqueFormFieldNames = list(set(form_field_names_1 + form_field_names_2))
+        return uniqueFormFieldNames
+    def getContractsRequestsByDate(self, token, formattedDate):
+            headers = self._getHeaders(token)
+            data = {
+                "flowId": 176,
+                "StartDateIntervalBegin": formattedDate,
+                "StartDateIntervalEnd": formattedDate,
+                "recordsPerPage": 100,
+                "formFieldNames": self._mergeFormFieldNames()
+            }
+            url = self._getDefaultInstanceReportUrl()
+            response = requests.post(url, json=data, headers=headers)
+            return response.json()
+        
+    
     def _contractDataRequest(self, instanceId, token, data):
         try:
             headers = self._getHeaders(token)

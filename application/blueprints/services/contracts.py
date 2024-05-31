@@ -20,45 +20,43 @@ class ContractsService:
     except Exception as e:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
-  def processContract(self, requestId):
-    zeevToken = self.zeevClient.generateZeevToken()
-    instanceProcess = self.zeevClient.getServiceType(requestId, zeevToken)
+  def processContract(self, contractValues):
     envelopeId = self.clickSignClient.createEnvelope()
-    instanceProcess = formatting.formatServiceType(instanceProcess)
+    workTypeObject = next((item for item in contractValues if item["name"] == "qualOTipoDeTrabalho"), None)
+    
+    requestId = contractValues['id']
+    workType = workTypeObject['value']
+    
+    if not workTypeObject:
+      raise Exception("processContract | No work type found for request:" + requestId)
+    
+    workTypeFormatted = formatting.formatServiceType(workType)
+    
     documentsId = []
-    if instanceProcess == "Grow":
-      documentsId.append(self._processGrowContract(requestId, zeevToken, envelopeId))
-    elif instanceProcess == "Wealth":
-      documentsId.append(self._processWealthContract(requestId, zeevToken, envelopeId))
-    elif instanceProcess == "Work":
-      documentsId.append(self._processWorkContract(requestId, zeevToken, envelopeId))
-    elif instanceProcess == "Grow & Wealth":
-        documentIdGrow = self._processGrowContract(requestId, zeevToken, envelopeId)
-        documentIdWealth = self._processWealthContract(requestId, zeevToken, envelopeId)
-        documentsId.extend([documentIdGrow, documentIdWealth])
+    
+    if workTypeFormatted == "Grow":
+      contractVariables = dataProcessing.defineVariablesGrow(contractValues)
+      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentsId.append(documentId)
+    elif workTypeFormatted == "Wealth":
+      contractVariables = dataProcessing.defineVariablesWealth(contractValues)
+      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentsId.append(documentId)
+    elif workTypeFormatted == "Work":
+      contractVariables = dataProcessing.defineVariablesWork(contractValues)
+      documentId = self._processContractSteps(contractVariables, envelopeId)
+      documentsId.append(documentId)
+    elif workTypeFormatted == "Grow & Wealth":
+      contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
+      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
+      documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId)
+      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId)
+      documentsId.extend([documentIdGrow, documentIdWealth])
     else:
-        logger.error("processContract | Unknown service type:" + instanceProcess)
+        logger.error("processContract | Unknown service type:" + workTypeFormatted)
         return None
 
-    return instanceProcess, documentsId
-
-  def _processGrowContract(self, requestId, zeevToken, envelopeId):
-      growResponse = self.zeevClient.firstStepContractPost(requestId, zeevToken)
-      growResponse2 = self.zeevClient.secondStepContractPost(requestId, zeevToken)
-      contractVariables = dataProcessing.defineVariablesGrow(growResponse, growResponse2)
-      return self._processContractSteps(contractVariables, envelopeId)
-
-  def _processWealthContract(self, requestId, zeevToken, envelopeId):
-      wealthResponse = self.zeevClient.sendZeevPost(requestId, zeevToken)
-      wealthResponse2 = self.zeevClient.sendZeevPost2(requestId, zeevToken)
-      contractVariables = dataProcessing.defineVariablesWealth(wealthResponse, wealthResponse2)
-      return self._processContractSteps(contractVariables, envelopeId)
-
-  def _processWorkContract(self, requestId, zeevToken, envelopeId):
-      workResponse = self.zeevClient.sendZeevPost(requestId, zeevToken)
-      workResponse2 = self.zeevClient.sendZeevPost2(requestId, zeevToken)
-      contractVariables = dataProcessing.defineVariablesWork(workResponse, workResponse2)
-      return self._processContractSteps(contractVariables, envelopeId)
+    return workTypeFormatted, documentsId
 
   def _definePhoneNumber(self, contractVariables):
     if self.config.get('PHONE_NUMBER_DEBUG'):
@@ -197,7 +195,7 @@ class ContractsService:
   def getStopInstanceId(self, id, zeevToken):
       stopId = id
       invalid_attempts = 0
-      max_invalid_attempts = 5
+      max_invalid_attempts = 10
 
       try:
           while invalid_attempts < max_invalid_attempts:
@@ -206,12 +204,13 @@ class ContractsService:
               print('responseeeeee>>>>>>', response.status_code, 'stopID: ', stopId)
               
               if response.status_code == 200:
-                  return stopId  # Retorna imediatamente o primeiro ID válido encontrado
+                  stopId += 1
+                  invalid_attempts = 0
               else:
                   invalid_attempts += 1
                   stopId += 1
 
-          return stopId  # Retorna o ID onde parou após 5 tentativas inválidas
+          return stopId - invalid_attempts
 
       except requests.exceptions.RequestException as e:
           logger.error("getStopInstanceId | Error during instance ID request:", exc_info=True)
@@ -219,6 +218,30 @@ class ContractsService:
       except Exception as e:
           logger.error("getStopInstanceId | An unexpected error occurred:", exc_info=True)
           raise
-
-      
-      
+    
+    
+  def processAllContracts(self):
+    contractsRequests = []
+    try: 
+      zeevToken = self.zeevClient.generateZeevToken()
+      now = datetime(2024, 5, 28)
+      formattedDate = now.strftime("%Y-%m-%d")
+      contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
+    except requests.exceptions.RequestException as e:
+      logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
+    
+    if not contractsRequests:
+      logger.info("processAllContracts | No contracts found to process")
+      return
+    logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
+    
+    for contractRequest in contractsRequests:
+      contractValues = contractRequest['formFields']
+    
+      try:
+       
+        serviceType, documentsId = self.processContract(contractValues)
+        self._insertSuccessfullyProcessedRequest(contractRequest['requestId'], serviceType, documentsId)
+      except Exception as e:
+        self._insertFailedProcessedRequest(contractRequest['requestId'], False, e.__str__(), 'error', True)
+        logger.error("processAllContracts | Error processing contract:" + contractRequest['requestId'], exc_info=True)

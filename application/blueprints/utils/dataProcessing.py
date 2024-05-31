@@ -1,104 +1,81 @@
-def extract_fields(field_mapping, response_json, response2_json):
-    contractContent = {}
-    for key, (source, i, j) in field_mapping.items():
-        contractContent[key] = source[i].get("formFields")[j].get("value")
-    return contractContent
+def findByName(list, name): 
+    objectFound = next((item for item in list if item["name"] == name), None)
+    if not objectFound:
+        return ""
+    return objectFound['value']
 
-def defineVariablesGrow(response_json, response2_json):
-    field_mapping = {
-        "nomeCompletoDoTitular": (response_json, 0, 2),
-        "email": (response_json, 0, 48),
-        "dataDeNascimento": (response2_json, 0, 1),
-        "telefoneDoTitular": (response_json, 0, 47),
-        "cpfDoTitular": (response_json, 0, 45),
-        "endereco": (response_json, 0, 49),
-        "bairro": (response_json, 0, 50),
-        "cidade": (response_json, 0, 51),
-        "uf": (response_json, 0, 52),
-        "cep": (response_json, 0, 53),
-        "nomeCompletoDoConjuge": (response_json, 0, 54),
-        "emailDoConjuge": (response2_json, 0, 10),
-        "dataDeNascimentoDoConjuge": (response2_json, 0, 9),
-        "prazoDeVigencia": (response_json, 0, 59),
-        "closerResponsavel": (response_json, 0, 0),
-        "origemInterna": (response_json, 0, 60),
-        "origemExterna": (response_json, 0, 61),
-        "valorDaImplantacão": (response_json, 0, 63),
-        "dataDePagamentoDaImplantacao": (response_json, 0, 64),
-        "formaDePagamentoDaImplantacao": (response_json, 0, 65),
-        "fee": (response_json, 0, 67),
-        "diaDeCobrançaDoFee": (response_json, 0, 68),
-        "observacoes": (response_json, 0, 72),
-        "telefoneDoConjuge": (response2_json, 0, 11),
-        "qualOTipoDeTrabalho": (response_json, 0, 1)
+def defineVariablesGrow(contractValues):
+    clickSignVariables = {
+        "nomeCompletoDoTitular": findByName(contractValues, "nomeDoIndicado"),
+        "email": findByName(contractValues, "emailDoIndicado"),
+        "dataDeNascimento": findByName(contractValues, "dataDeNascimentoDoTitular"),
+        "telefoneDoTitular":  findByName(contractValues, "telefone"),
+        "cpfDoTitular":  findByName(contractValues, "cPF"),
+        "endereco": findByName(contractValues, "endereco"),
+        "bairro": findByName(contractValues, "bairro"),
+        "cidade": findByName(contractValues, "cidade"),
+        "uf": findByName(contractValues, "uf"),
+        "cep": findByName(contractValues, "cEP"),
+        "nomeCompletoDoConjuge": findByName(contractValues, "nomeDoConjugeResponsavelPelaEmpresa"),
+        "emailDoConjuge": findByName(contractValues, "email"),
+        "dataDeNascimentoDoConjuge": findByName(contractValues, "dataDeNascimento"),
+        "prazoDeVigencia": findByName(contractValues, "prazoDeVigencia"),
+        "closerResponsavel": findByName(contractValues, "informeOCloser"),
+        "origemInterna": findByName(contractValues, "origemInterna"),
+        "origemExterna": findByName(contractValues, "origemExterna"),
+        "valorDaImplantacão": findByName(contractValues, "valorDeImplantacao"),
+        "dataDePagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
+        "formaDePagamentoDaImplantacao": findByName(contractValues, "formaDePagamentoDaImplantacao"),
+        "fee": findByName(contractValues, "valorDoFEE"),
+        "diaDeCobrançaDoFee": findByName(contractValues, "diaDeCobrançaDoFee"),
+        "observacoes": findByName(contractValues, "observacao"),
+        "telefoneDoConjuge": findByName(contractValues, "telefone"),
+        "qualOTipoDeTrabalho": findByName(contractValues, "qualOTipoDeTrabalho"),
     }
-    return extract_fields(field_mapping, response_json, response2_json)
+    return clickSignVariables
 
-def defineVariablesWealth(response_json, response2_json):
-    field_mapping = {
-        "nomeCompletoDoTitular": (response_json, 0, 2),
-        "email": (response_json, 0, 48),
-        "dataDeNascimento": (response2_json, 0, 1),
-        "telefoneDoTitular": (response_json, 0, 47),
-        "cpfDoTitular": (response_json, 0, 45),
-        "endereco": (response_json, 0, 49),
-        "bairro": (response_json, 0, 50),
-        "cidade": (response_json, 0, 51),
-        "uf": (response_json, 0, 52),
-        "cep": (response_json, 0, 53),
-        "nomeCompletoDoConjuge": (response_json, 0, 54),
-        "emailDoConjuge": (response2_json, 0, 10),
-        "dataDeNascimentoDoConjuge": (response2_json, 0, 9),
-        "prazoDeVigencia": (response_json, 0, 59),
-        "closerResponsavel": (response_json, 0, 0),
-        "origemInterna": (response_json, 0, 60),
-        "origemExterna": (response_json, 0, 61),
-        "valorDaImplantacão": (response_json, 0, 63),
-        "dataDePagamentoDaImplantacao": (response_json, 0, 64),
-        "formaDePagamentoDaImplantacao": (response_json, 0, 65),
-        "fee": (response_json, 0, 67),
-        "diaDeCobrançaDoFee": (response_json, 0, 68),
-        "observacoes": (response_json, 0, 72),
-        "telefoneDoConjuge": (response2_json, 0, 11),
-        "qualOTipoDeTrabalho": (response_json, 0, 1),
-        "cobrancaPelaCorretora": (response2_json, 0, 18),
-        "patrimonioFinanceiroEstimado": (response_json, 0, 33),
-        "vincularAContratoPai": (response_json, 0, 19),
-        "numeroDoContratoPai": (response_json, 0, 20)
+def defineVariablesWealth(contractValues):
+    clickSignVariablesGrow = defineVariablesGrow(contractValues)
+    clickSignVariablesWealth = {
+        "cobrancaPelaCorretora": findByName(contractValues, "autorizacaoDeCobrancaPelaCorretora"),
+        "patrimonioFinanceiroEstimado": findByName(contractValues, "patrimonioFinanceiro"),
+        "vincularAContratoPai": findByName(contractValues, "haveraVinculacaoContratoPai"),
+        "numeroDoContratoPai": findByName(contractValues, "numeroDoContratoPai")
     }
-    return extract_fields(field_mapping, response_json, response2_json)
+    clickSignVariables = {**clickSignVariablesGrow, **clickSignVariablesWealth}
+    return clickSignVariables
 
-def defineVariablesWork(response_json, response2_json):
-    field_mapping = {
-        "nomeDaEmpresa": (response_json, 0, 44),
-        "emailDeContato": (response_json, 0, 48),
-        "telefoneDaEmpresa": (response_json, 0, 47),
-        "cnpj": (response_json, 0, 45),
-        "endereco": (response_json, 0, 49),
-        "bairro": (response_json, 0, 50),
-        "cidade": (response_json, 0, 51),
-        "uf": (response_json, 0, 52),
-        "cep": (response_json, 0, 53),
-        "nomeCompletoDoResponsavel": (response_json, 0, 54),
-        "cpfDoResponsavel": (response2_json, 0, 8),
-        "emailDoResponsavel": (response2_json, 0, 10),
-        "cargoDoResponsavel": (response_json, 0, 38),
-        "dataDeNascimentoDoResponsavel": (response2_json, 0, 9),
-        "prazoDeVigencia": (response_json, 0, 59),
-        "closerResponsavel": (response_json, 0, 0),
-        "origemInterna": (response_json, 0, 60),
-        "origemExterna": (response_json, 0, 61),
-        "valorDaImplantacão": (response_json, 0, 63),
-        "dataDePagamentoDaImplantacao": (response_json, 0, 64),
-        "formaDePagamentoDaImplantacao": (response_json, 0, 65),
-        "fee": (response_json, 0, 67),
-        "diaDeCobrançaDoFee": (response_json, 0, 68),
-        "observacoes": (response_json, 0, 72),
-        "telefoneDoConjuge": (response2_json, 0, 11),
-        "qualOTipoDeTrabalho": (response_json, 0, 1),
-        "cobrancaPelaCorretora": (response2_json, 0, 18),
-        "patrimonioFinanceiroEstimado": (response_json, 0, 33),
-        "vincularAContratoPai": (response_json, 0, 19),
-        "numeroDoContratoPai": (response_json, 0, 20)
+def defineVariablesWork(contractValues):
+    clickSignVariables = {
+        "nomeDaEmpresa": findByName(contractValues, "nomeDoConjugeResponsavelPelaEmpresa"),
+        "emailDeContato": findByName(contractValues, "email"),
+        "telefoneDaEmpresa": findByName(contractValues, "telefone"),
+        "cnpj": findByName(contractValues, "cPFCPNJ"),
+        "endereco": findByName(contractValues, "endereco"),
+        "bairro": findByName(contractValues, "bairro"),
+        "cidade": findByName(contractValues, "cidade"),
+        "uf": findByName(contractValues, "uf"),
+        "cep": findByName(contractValues, "cEP"),
+        "nomeCompletoDoResponsavel": findByName(contractValues, "nomeDoIndicado"),
+        "cpfDoResponsavel": findByName(contractValues, "cPF"),
+        "emailDoResponsavel": findByName(contractValues, "emailDoIndicado"),
+        "cargoDoResponsavel": findByName(contractValues, "profissaoDoTitular"),
+        "dataDeNascimentoDoResponsavel": findByName(contractValues, "dataDeNascimento"),
+        "prazoDeVigencia": findByName(contractValues, "prazoDeVigencia"),
+        "closerResponsavel": findByName(contractValues, "informeOCloser"),
+        "origemInterna": findByName(contractValues, "origemInterna"),
+        "origemExterna": findByName(contractValues, "origemExterna"),
+        "valorDaImplantacão": findByName(contractValues, "valorDeImplantacao"),
+        "dataDePagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
+        "formaDePagamentoDaImplantacao": findByName(contractValues, "formaDePagamentoDaImplantacao"),
+        "fee": findByName(contractValues, "valorDoFEE"),
+        "diaDeCobrançaDoFee": findByName(contractValues, "diaDeCobrançaDoFee"),
+        "observacoes": findByName(contractValues, "observacao"),
+        "telefoneDoConjuge": findByName(contractValues, "telefone"),
+        "qualOTipoDeTrabalho": findByName(contractValues, "qualOTipoDeTrabalho"),
+        "cobrancaPelaCorretora": findByName(contractValues, "autorizacaoDeCobrancaPelaCorretora"),
+        "patrimonioFinanceiroEstimado": findByName(contractValues, "patrimonioFinanceiro"),
+        "vincularAContratoPai": findByName(contractValues, "haveraVinculacaoContratoPai"),
+        "numeroDoContratoPai": findByName(contractValues, "numeroDoContratoPai")
     }
-    return extract_fields(field_mapping, response_json, response2_json)
+    return clickSignVariables
