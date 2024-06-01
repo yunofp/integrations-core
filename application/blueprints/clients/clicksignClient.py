@@ -42,8 +42,6 @@ class ClicksignClient:
             raise
 
     def sendClickSignPostGrow(self, dataVariables, envelopeId, filename):
-        try:
-
             url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/documents"
 
             data = {
@@ -85,19 +83,10 @@ class ClicksignClient:
             }
 
             response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                csResponse = json.loads(json_response)
-                return csResponse.get("data").get("id")
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("sendClickSignPostGrow: Error while sending document: " + str(e))
-            raise
+
+            return response.json()
 
     def sendClickSignPostWealth(self, dataVariables, envelopeId, filename):
-        try:
             url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/documents"
 
             data = {
@@ -144,23 +133,11 @@ class ClicksignClient:
             }
 
             response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                csResponse = json.loads(json_response)
-                return csResponse.get("data").get("id")
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("sendClickSignPostWealth: Error while sending document: " + str(e))
-            raise
+            return response.json()
 
     def sendClickSignPostWork(self, dataVariables, envelopeId, filename):
-        try:
-
             url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/documents"
-            
-
+    
             data = {
                 "data":{
                     "type":"documents",
@@ -201,101 +178,37 @@ class ClicksignClient:
             }
 
             response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                csResponse = json.loads(json_response)
-                return csResponse.get("data").get("id")
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("sendClickSignPostWork: Error while sending document: " + str(e))
-            raise
-        
-    # def addSignerToEnvelope(self, envelopeId, dataVariables, cpf, birthdate, phoneNum, email):
-    #     try:
-        
-    #         url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/signers"
-
-    #         data = {
-    #                 "data":{
-    #                 "type":"signers",
-    #                 "attributes":{
-    #                     "name":dataVariables.get("nomeCompletoDoTitular"),
-    #                     "birthday":birthdate,
-    #                     "email":email,
-    #                     "phone_number":phoneNum,
-    #                     "has_documentation":True,
-    #                     "documentation":cpf,
-    #                     "refusable":True,  
-    #                     "communicate_events":{
-    #                         "document_signed":"whatsapp",
-    #                         "signature_request":"whatsapp",
-    #                         "signature_reminder":"email"
-    #                     }
-    #                 }
-    #             }
-    #         }
-
-    #         response = requests.post(url, json=data, headers=self.headers)
-            
-    #         if response.status_code == 201:
-    #             json_response = response.text.replace("'", '"')
-    #             csResponse = json.loads(json_response)
-    #             return csResponse.get("data").get("id")
-    #     except requests.exceptions.RequestException as e:
-    #         json_response = response.text.replace("'", '"')
-    #         csResponse = json.loads(json_response)
-    #         logger.error("addSignerToEnvelope: Error while sending document: " + str(e))
-    #         raise
-
-
-    def addSignerToEnvelope(self,envelopeId, dataVariables, cpf, birthdate, phoneNum, email):
-        try:
-            headers = {
-                'Content-Type': 'application/vnd.api+json',
-                'Authorization': "e6598ab0-0bfa-444e-b971-1b09f0ef0c4e"
-            }
-
-            url = "https://app.clicksign.com/api/v3/envelopes/" + envelopeId + "/signers"
-
+            return response.json()
+    def addSignerToEnvelope(self, envelopeId, dataVariables, cpf, birthdate, phoneNum, email):
+            url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/signers"
+            name = dataVariables.get("nomeCompletoDoTitular")
             data = {
-        "data":{
-        "type":"signers",
-        "attributes":{
-            "name":dataVariables.get("nomeCompletoDoTitular"),
-            "birthday":birthdate,
-            "email":email,
-            "phone_number":phoneNum,
-            "has_documentation":True,
-            "documentation":cpf,
-            "refusable":True,  
-            "communicate_events":{
-                "document_signed":"whatsapp",
-                "signature_request":"whatsapp",
-                "signature_reminder":"email"
+                    "data":{
+                    "type":"signers",
+                    "attributes":{
+                        "name":name,
+                        "birthday":birthdate,
+                        "email":email,
+                        "phone_number":phoneNum,
+                        "has_documentation":True,
+                        "documentation":cpf,
+                        "refusable":True,  
+                        "communicate_events":{
+                            "document_signed":"whatsapp",
+                            "signature_request":"whatsapp",
+                            # "signature_reminder":"email"
+                        }
+                    }
+                }
             }
-        }
-    }
-    }
 
-            response = requests.post(url, json=data, headers=headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                csResponse = json.loads(json_response)
-                return csResponse.get("data").get("id")
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print("Erro durante a solicitação:", e)
-            json_response = response.text.replace("'", '"')
-            csResponse = json.loads(json_response)
-            print(csResponse)
+            response = requests.post(url, json=data, headers=self.headers)
+    
+            return response.json()
+
+  
     def addQualificationRequirements(self, envelopeId, signerId, documentId):
-        try:
             url = self.clickSignBaseUrl + "/envelopes/" + envelopeId + "/requirements"
-
             data = {
                 "data": {
                     "type": "requirements",
@@ -315,16 +228,7 @@ class ClicksignClient:
             }
 
             response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                csResponse = json.loads(json_response)
-                return csResponse.get("data").get("id")
-        except requests.exceptions.RequestException as e:
-            json_response = response.text.replace("'", '"')
-            csResponse = json.loads(json_response)
-            logger.error("addQualificationRequirements: Error while sending document: " + str(e))
-            raise
+            return response.json()
 
     def addAuthRequirements(self, envelopeId, signerId, documentId):
         try:

@@ -4,7 +4,7 @@ def configure_logging(app):
     log_format = '[%(asctime)s] [%(levelname)s] - %(message)s'
     date_format = '%Y-%m-%d %H:%M:%S'
     
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         format=log_format,
                         datefmt=date_format,
                         handlers=[

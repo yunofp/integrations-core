@@ -22,4 +22,8 @@ class ProcessedRequestsRepository:
     def updateOne(self, requestId, data):
         result = self.collection.update_one({'requestId': requestId}, {'$set': data})
         return result
+    
+    def findByRequestId(self, requestId):
+        result = self.collection.find_one({'requestId': requestId})
+        return result
         

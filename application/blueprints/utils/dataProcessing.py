@@ -5,16 +5,17 @@ def findByName(list, name):
     return objectFound['value']
 
 def defineVariablesGrow(contractValues):
+
     clickSignVariables = {
         "nomeCompletoDoTitular": findByName(contractValues, "nomeDoIndicado"),
-        "email": findByName(contractValues, "emailDoIndicado"),
+        "email": findByName(contractValues, "emailDoIndicado") or findByName(contractValues, "emailDeContato") or findByName(contractValues, "emailDoCliente"),
         "dataDeNascimento": findByName(contractValues, "dataDeNascimentoDoTitular"),
-        "telefoneDoTitular":  findByName(contractValues, "telefone"),
-        "cpfDoTitular":  findByName(contractValues, "cPF"),
+        "telefoneDoTitular":  findByName(contractValues, "telefone") or findByName(contractValues, "contatoDoCliente"),
+        "cpfDoTitular":  findByName(contractValues, "cPF") or findByName(contractValues, "cPFCPNJ"),
         "endereco": findByName(contractValues, "endereco"),
         "bairro": findByName(contractValues, "bairro"),
         "cidade": findByName(contractValues, "cidade"),
-        "uf": findByName(contractValues, "uf"),
+        "uf": findByName(contractValues, "uF"),
         "cep": findByName(contractValues, "cEP"),
         "nomeCompletoDoConjuge": findByName(contractValues, "nomeDoConjugeResponsavelPelaEmpresa"),
         "emailDoConjuge": findByName(contractValues, "email"),
@@ -23,8 +24,8 @@ def defineVariablesGrow(contractValues):
         "closerResponsavel": findByName(contractValues, "informeOCloser"),
         "origemInterna": findByName(contractValues, "origemInterna"),
         "origemExterna": findByName(contractValues, "origemExterna"),
-        "valorDaImplantacão": findByName(contractValues, "valorDeImplantacao"),
-        "dataDePagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
+        "valorDaImplantacao": findByName(contractValues, "valorDeImplantacao"),
+        "pagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
         "formaDePagamentoDaImplantacao": findByName(contractValues, "formaDePagamentoDaImplantacao"),
         "fee": findByName(contractValues, "valorDoFEE"),
         "diaDeCobrançaDoFee": findByName(contractValues, "diaDeCobrançaDoFee"),

@@ -60,7 +60,6 @@ class ContractsService:
   def _definePhoneNumber(self, contractVariables):
     if self.config.get('PHONE_NUMBER_DEBUG'):
       phoneNum = self.config.get('PHONE_NUMBER_DEBUG')
-      print('Pegando telefone do tarcisio')
     else:
       phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
     return phoneNum
@@ -69,18 +68,41 @@ class ContractsService:
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFilename(contractVariables)
       documentId = None
-      if contractType == 'grow':
-        documentId = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
-      elif contractType == 'wealth':
-        documentId = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
-      elif contractType == 'work':
-        documentId = self.clickSignClient.sendClickSignPostWork(contractVariables, envelopeId, filename)
+    
+      if contractType == 'Grow':
+        growResponse = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
+        documentId = growResponse.get('data', {}).get('id')
+        if not documentId:
+          raise Exception("processContract | Error while creating document:" + str(growResponse))
+      elif contractType == 'Wealth':
+        wealthResponse = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
+        documentId = wealthResponse.get('data', {}).get('id')
+        if not documentId:
+          raise Exception("processContract | Error while creating document:" + str(wealthResponse))
+      elif contractType == 'Work':
+        workResponse = self.clickSignClient.sendClickSignPostWork(contractVariables, envelopeId, filename)
+        documentId = workResponse.get('data', {}).get('id')
+        if not documentId:
+          raise Exception("processContract | Error while creating document:" + str(workResponse))
+        
    
       cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
       email = contractVariables.get("email")
       birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
-      signerId =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
-      self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
+  
+      response =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
+      
+      signerId = response.get('data', {}).get('id')
+      if not signerId:
+        raise Exception("processContract | Error while creating signer:" + str(response))
+     
+      qualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
+
+      qualificationRequirementsId = qualificationRequirementsResponse.get('data', {}).get('id')
+      
+      if not qualificationRequirementsId:
+        raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  
+    
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
       self.clickSignClient.activateEnvelope(envelopeId)
       self.clickSignClient.notificateEnvelope(envelopeId)
@@ -198,39 +220,11 @@ class ContractsService:
             serviceType, documentsId = self.processContract(processedRequest['requestId'])
             self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
     
-  def getStopInstanceId(self, id, zeevToken):
-      stopId = id
-      invalid_attempts = 0
-      max_invalid_attempts = 10
-
-      try:
-          while invalid_attempts < max_invalid_attempts:
-              response = self.zeevClient.instanceIdRequest(stopId, zeevToken)
-              
-              print('responseeeeee>>>>>>', response.status_code, 'stopID: ', stopId)
-              
-              if response.status_code == 200:
-                  stopId += 1
-                  invalid_attempts = 0
-              else:
-                  invalid_attempts += 1
-                  stopId += 1
-
-          return stopId - invalid_attempts
-
-      except requests.exceptions.RequestException as e:
-          logger.error("getStopInstanceId | Error during instance ID request:", exc_info=True)
-          raise
-      except Exception as e:
-          logger.error("getStopInstanceId | An unexpected error occurred:", exc_info=True)
-          raise
-    
-    
   def processAllContracts(self):
     contractsRequests = []
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      now = datetime(2024, 5, 24)
+      now = datetime(2024, 5, 29)
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
     except requests.exceptions.RequestException as e:
@@ -243,9 +237,17 @@ class ContractsService:
     logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
     
     for contractRequest in contractsRequests:
+      requestId = contractRequest['id']
+      
+      alreadyExists = self.processedRequestRepository.findByRequestId(requestId)
+      
+      if alreadyExists:
+        logger.info("processAllContracts | Contract request already exists:" + str(requestId))
+        continue
+      
       contractValues = contractRequest['formFields']
       isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
-      requestId = contractRequest['id']
+      
       
       if not isContractCompletelyFilledToProcess:
         logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
