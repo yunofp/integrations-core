@@ -180,12 +180,14 @@ class ContractsService:
             self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
     
   def processAllContracts(self):
+    logger.info("processAllContracts | starting to process all contracts")
     contractsRequests = []
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
       now = datetime(2024, 5, 29)
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
+      print('contractsssssssss', contractsRequests)
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
     
@@ -196,7 +198,8 @@ class ContractsService:
     logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
     
     for contractRequest in contractsRequests:
-      requestId = contractRequest['id']
+      print('aqioooo', contractRequest)
+      requestId = contractRequest.get('id')
       
       alreadyExists = self.processedRequestRepository.findByRequestId(requestId)
       

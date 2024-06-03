@@ -3,3 +3,4 @@ dynaconf==3.2.5
 flask-restful==0.3.10
 pytest
 pytest-flask
+mongomock
