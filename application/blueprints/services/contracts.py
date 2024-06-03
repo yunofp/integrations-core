@@ -25,16 +25,18 @@ class ContractsService:
     workTypeObject = next((item for item in contractValues if item["name"] == "qualOTipoDeTrabalho"), None)
     
     workType = workTypeObject['value']
-    
+
     if not workTypeObject:
       raise Exception("processContract | No work type found for request:" + requestId)
-    
+
     workTypeFormatted = formatting.formatServiceType(workType)
     
     documentsId = []
     
     if workTypeFormatted == "Grow":
+      
       contractVariables = dataProcessing.defineVariablesGrow(contractValues)
+  
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documentsId.append(documentId)
     elif workTypeFormatted == "Wealth":
@@ -68,7 +70,7 @@ class ContractsService:
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFilename(contractVariables)
       documentId = None
-    
+   
       if contractType == 'Grow':
         growResponse = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
         documentId = growResponse.get('data', {}).get('id')
@@ -89,10 +91,11 @@ class ContractsService:
       cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
       email = contractVariables.get("email")
       birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
-  
+      
       response =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
       
       signerId = response.get('data', {}).get('id')
+      
       if not signerId:
         raise Exception("processContract | Error while creating signer:" + str(response))
      
@@ -187,7 +190,6 @@ class ContractsService:
       now = datetime(2024, 5, 29)
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
-      print('contractsssssssss', contractsRequests)
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
     
@@ -198,25 +200,25 @@ class ContractsService:
     logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
     
     for contractRequest in contractsRequests:
-      print('aqioooo', contractRequest)
+
       requestId = contractRequest.get('id')
-      
+
       alreadyExists = self.processedRequestRepository.findByRequestId(requestId)
-      
+
       if alreadyExists:
         logger.info("processAllContracts | Contract request already exists:" + str(requestId))
         continue
       
       contractValues = contractRequest['formFields']
+
       isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
-      
       
       if not isContractCompletelyFilledToProcess:
         logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
         self._insertFailedProcessedRequest(requestId, True, None, None, True)
         continue
       try:
-  
+       
         serviceType, documentsId = self.processContract(requestId ,contractValues)
         self._insertSuccessfullyProcessedRequest(requestId, serviceType, documentsId)
       except Exception as e:

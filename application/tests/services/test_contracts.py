@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, call, patch, MagicMock
 from datetime import datetime, timezone
 from flask import Flask
 from mongomock import MongoClient
@@ -30,17 +30,23 @@ def service(app_context):
     contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient)
     return contractService, zeevClient, processedRequestRepository, clickSignClient
 
-def test_processContract(service, mocker):
+def test_process_sucess_grow_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    requestId = zeev_responses.response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.response)
-    # contractService._processContractSteps = MagicMock(return_value=("workType", ["documentId"]))
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
     
-    result = contractService.processAllContracts()
+    spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')  
+     
+    contractService.processAllContracts()
     
-    # Verifique se o resultado é o esperado
-    # assert result == ("workType", ["documentId"])
-    # service._processContractSteps.assert_called_once_with(
-    #     {"name": "qualOTipoDeTrabalho", "value": "grow"}, 
-    #     # mocker.ANY, 
-    #     "Grow"
-    # )
+    spyInsert.assert_called_once_with(requestId, 'Grow', [1])
+
+    assert spyInsert.call_args == call(requestId, 'Grow', [1])
