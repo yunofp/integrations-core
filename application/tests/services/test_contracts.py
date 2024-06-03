@@ -1,14 +1,9 @@
 import pytest
-from unittest.mock import Mock, call, patch, MagicMock
-from datetime import datetime, timezone
+from unittest.mock import Mock, call, MagicMock
 from flask import Flask
-from mongomock import MongoClient
 import logging
 from application.tests.populate import zeev_responses
-
-from application.blueprints.services.contracts import ContractsService  # Atualize com o caminho correto
-from application.blueprints.utils import formatting, dataProcessing
-# Função auxiliar para criar uma instância da classe ContractsService com mocks
+from application.blueprints.services.contracts import ContractsService
 
 logger = logging.getLogger(__name__)
 @pytest.fixture
