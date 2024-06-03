@@ -168,47 +168,6 @@ class ContractsService:
       except Exception as e:
           logger.error("_insertFailedProcessedRequest | Error inserting failed processed request:" + requestId, exc_info=True)
 
-  def run(self):
-    
-    lastProcessedRequest = self.processedRequestRepository.getLastProcessedRequest()
-    if 'requestId' not in lastProcessedRequest:
-      logger.warn("run | lastProcessedRequest not found")
-      return
-    
-    newRequestId = lastProcessedRequest['requestId'] + 1
-    token = self.zeevClient.generateZeevToken()
-    stopId = self.getStopInstanceId(newRequestId, token)
-
-    if (newRequestId) == stopId:
-        logger.info("run | stopping at stopId:" + str(stopId))
-        return
-    logger.info("run | continuing at newRequestId:" + str(newRequestId))
-    data = self.zeevClient.secondStepContractPost(newRequestId, token)
-
-    if data:
-        requestName = data[0].get("requestName")
-        if self._isNewClientYuno(requestName):
-            readyToProcess = data[0].get("formFields")[0].get("value")
-            if readyToProcess:
-                  try:
-                    serviceType, documentsId = self.processContract(newRequestId)
-                    self._insertSuccessfullyProcessedRequest(newRequestId, serviceType, documentsId)
-                    self.run()
-                  except Exception as e:
-                    self._insertFailedProcessedRequest(newRequestId, True, e.__str__(), 'error', True)
-                    logger.error("run | Error processing contract:" + newRequestId, exc_info=True)
-                    self.run()
-            else:
-              self._insertFailedProcessedRequest(newRequestId, False, None, None, True) 
-              self.run()
-        else:
-          self._insertFailedProcessedRequest(newRequestId, False) 
-          self.run()
-    else:
-        self._insertFailedProcessedRequest(newRequestId, False, False) 
-        self.run()
-
-
   def runTryAgain(self):
     processedRequestsRetries = self.processedRequestRepository.getManyRetries()
     token = self.zeevClient.generateZeevToken()
