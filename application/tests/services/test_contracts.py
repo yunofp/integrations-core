@@ -47,7 +47,7 @@ def test_should_process_sucess_grow_contract(service, mocker):
 
     assert spyInsert.call_args == call(requestId, 'Grow', [1])
 
-def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mocker):
+def test_should_get_correct_clicksign_variables_sucess_grow_contract():
     clicksignVariables = defineVariablesGrow(zeev_responses.response[0].get('formFields'))
     
     assert clicksignVariables.get('nomeCompletoDoTitular') == 'Strokes INC.'
@@ -65,7 +65,7 @@ def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mo
     assert clicksignVariables.get('dataDeNascimentoDoConjuge') == '14/05/1997'
     assert clicksignVariables.get('telefoneDoConjuge') == '(62)99345-6689'
     assert clicksignVariables.get('prazoDeVigencia') == '2'
-    assert clicksignVariables.get('closerResponsavel') == ''
+    assert clicksignVariables.get('closerResponsavel') == 'aristeu'
     assert clicksignVariables.get('origemInterna') == 'Tarcísio Campos'
     assert clicksignVariables.get('origemExterna') == 'ORIGEM EXTERNA'
     assert clicksignVariables.get('valorDaImplantacao') == '400,00'
@@ -73,7 +73,7 @@ def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mo
     assert clicksignVariables.get('formaDePagamentoDaImplantacao') == 'PIX'
     assert clicksignVariables.get('fee') == '2,00'
     assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
-    assert clicksignVariables.get('observacoes') == ''
+    assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
 
     
     

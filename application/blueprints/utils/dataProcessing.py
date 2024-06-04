@@ -30,7 +30,7 @@ def defineVariablesGrow(contractValues):
         "formaDePagamentoDaImplantacao": findByName(contractValues, "formaDePagamentoDaImplantacao"),
         "fee": findByName(contractValues, "valorDoFEE"),
         "diaDeCobrançaDoFee": findByName(contractValues, "diaDaCobrancaRecorrente"),
-        "observacoes": findByName(contractValues, "observacao"),
+        "observacoes": findByName(contractValues, "observacao") or findByName(contractValues, "obervacao")
     }
     return clickSignVariables
 
