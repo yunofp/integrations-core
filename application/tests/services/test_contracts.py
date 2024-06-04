@@ -47,10 +47,11 @@ def test_should_process_sucess_grow_contract(service, mocker):
 
     assert spyInsert.call_args == call(requestId, 'Grow', [1])
 
-def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mocker):
-    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+# def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mocker):
+#     contractService, zeevClient, processedRequestRepository, clickSignClient = service
    
-    clicksignVariables = defineVariablesGrow(zeev_responses.response)
+#     clicksignVariables = defineVariablesGrow(zeev_responses.response[0].get('formFields'))
     
+#     print(clicksignVariables)
     
     

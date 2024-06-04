@@ -22,11 +22,9 @@ class ContractsService:
     
   def processContract(self, requestId, contractValues):
     envelopeId = self.clickSignClient.createEnvelope()
-    workTypeObject = next((item for item in contractValues if item["name"] == "qualOTipoDeTrabalho"), None)
+    workType = dataProcessing.findByName(contractValues, "qualOTipoDeTrabalho")
     
-    workType = workTypeObject['value']
-
-    if not workTypeObject:
+    if not workType:
       raise Exception("processContract | No work type found for request:" + requestId)
 
     workTypeFormatted = formatting.formatServiceType(workType)
@@ -68,7 +66,7 @@ class ContractsService:
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
       phoneNum = self._definePhoneNumber(contractVariables)
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
-      filename = formatting.formatFilename(contractVariables)
+      filename = formatting.formatFilename(contractType, contractVariables)
       documentId = None
    
       if contractType == 'Grow':
