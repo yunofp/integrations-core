@@ -42,6 +42,7 @@ def defineVariablesWealth(contractValues):
         "vincularAContratoPai": findByName(contractValues, "haveraVinculacaoContratoPai"),
         "numeroDoContratoPai": findByName(contractValues, "numeroDoContratoPai")
     }
+    
     clickSignVariables = {**clickSignVariablesGrow, **clickSignVariablesWealth}
     return clickSignVariables
 
