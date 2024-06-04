@@ -68,134 +68,15 @@ class ZeevClient:
         except requests.exceptions.RequestException as e:
             logger.error("getServiceType | Error during request:", exc_info=True)
             raise 
-    def _firstStepContractDataRequest(self, instanceId):
-        data = {
-            "instanceId": instanceId,
-            "flowId": self.config['ZEEV_NEW_CLIENT_FLOW_ID'],
-            "formFieldNames": [
-                "quemEVoce",
-                "qualOTipoDeTrabalho",
-                "nomeDoIndicado",
-                "q01",
-                "q02",
-                "q03",
-                "q04",
-                "q05",
-                "q06",
-                "q07",
-                "q08",
-                "q09",
-                "q10",
-                "q11",
-                "q12",
-                "valorDaRendaFamiliar",
-                "pont01",
-                "pont02",
-                "pont03",
-                "pont04",
-                "pont05",
-                "pont06",
-                "pont07",
-                "pont08",
-                "pont09",
-                "pont10",
-                "pont11",
-                "pont12",
-                "pont13",
-                "calcularTotal",
-                "total",
-                "nomeDoCliente-Llaz",
-                "contatoDoCliente",
-                "emailDoCliente",
-                "sugestaoDeImplantacao",
-                "valorDeImplantacao",
-                "sugestaoDeFEE",
-                "valorDoFEE",
-                "nomeDoCliente",
-                "rendaMensalDoClientefamilia",
-                "patrimonioFinanceiro",
-                "patrimonioImobilizado",
-                "perfilOrcamentario",
-                "imovelQueMora",
-                "estadoCivil",
-                "profissaoDoTitular",
-                "profissaoDoConjuge",
-                "numeroDeFilhos",
-                "ramoDeAtividade",
-                "nomeDosSocios",
-                "oClienteContratouAoMesmoTempoGrowWealth",
-                "dataDoEnvioDoContrato",
-                "dataEmQueOClienteAssinaraOContrato",
-                "horaEmQueAssinaraOContrato",
-                "qualOTipoDoContrato",
-                "informeOCloser",
-                "oClienteTambemFechouOContratoDeConsultoria",
-                "codcloserResponsavel",
-                "dataDeNascimentoDoTitular",
-                "cPFCPNJ",
-                "endereco",
-                "bairro",
-                "cidade",
-                "uf",
-                "cEP",
-                "nomeDoConjugeResponsavelPelaEmpresa",
-                "email",
-                "dataDeNascimento",
-                "prazoDeVigencia",
-                "origemInterna",
-                "origemExterna",
-                "dataDoPagamentoDaImplantacao",
-                "formaDePagamentoDaImplantacao",
-                "diaDaCobrancaRecorrente",
-                "obervacao",
-                "autorizacaoDeCobrancaPelaCorretora",
-                "haveraVinculacaoContratoPai",
-                "numeroDoContratoPai",
-                "cPF",
-                "telefone"
-            ]
-        }
-        return data
-    def _secondStepContractDataRequest(self, instanceId):
-        instancesFilter = {
-            # "instanceId": 1374,
-            "pageNumber": 1,
-            "flowId": 176
-            # "formFieldNames": [
-            #     "dataDeNascimentoDoTitular",
-            #     "cPFCPNJ",
-            #     "endereco",
-            #     "bairro",
-            #     "cidade",
-            #     "uf",
-            #     "cEP",
-            #     "nomeDoConjugeResponsavelPelaEmpresa",
-            #     "email",
-            #     "dataDeNascimento",
-            #     "prazoDeVigencia",
-            #     "origemInterna",
-            #     "origemExterna",
-            #     "dataDoPagamentoDaImplantacao",
-            #     "formaDePagamentoDaImplantacao",
-            #     "diaDaCobrancaRecorrente",
-            #     "obervacao",
-            #     "autorizacaoDeCobrancaPelaCorretora",
-            #     "haveraVinculacaoContratoPai",
-            #     "numeroDoContratoPai",
-            #     "cPF",
-            #     "telefone"
-            # ]
-        }
-        return instancesFilter
-    
-    def _mergeFormFieldNames(self):
-        form_field_names_1 = [
+        
+    def _FormFieldNames(self):
+        return [
             "quemEVoce", "qualOTipoDeTrabalho", "nomeDoIndicado", "q01", "q02", "q03",
             "q04", "q05", "q06", "q07", "q08", "q09", "q10", "q11", "q12",
             "valorDaRendaFamiliar", "pont01", "pont02", "pont03", "pont04",
             "pont05", "pont06", "pont07", "pont08", "pont09", "pont10",
             "pont11", "pont12", "pont13", "calcularTotal", "total",
-            "nomeDoCliente-Llaz", "contatoDoCliente", "emailDoCliente",
+            "nomeDoCliente-Llaz", "contatoDoCliente", "responsavelPelaContratacao", "emailDoCliente",
             "sugestaoDeImplantacao", "valorDeImplantacao", "sugestaoDeFEE",
             "valorDoFEE", "nomeDoCliente", "rendaMensalDoClientefamilia",
             "patrimonioFinanceiro", "patrimonioImobilizado", "perfilOrcamentario",
@@ -205,26 +86,14 @@ class ZeevClient:
             "dataEmQueOClienteAssinaraOContrato", "horaEmQueAssinaraOContrato",
             "qualOTipoDoContrato", "informeOCloser", "oClienteTambemFechouOContratoDeConsultoria",
             "codcloserResponsavel", "dataDeNascimentoDoTitular", "cPFCPNJ",
-            "endereco", "bairro", "cidade", "uf", "cEP",
+            "endereco", "bairro", "cidade", "uF", "cEP",
             "nomeDoConjugeResponsavelPelaEmpresa", "email", "dataDeNascimento",
             "prazoDeVigencia", "origemInterna", "origemExterna", "dataDoPagamentoDaImplantacao",
             "formaDePagamentoDaImplantacao", "diaDaCobrancaRecorrente", "obervacao",
             "autorizacaoDeCobrancaPelaCorretora", "haveraVinculacaoContratoPai",
-            "numeroDoContratoPai", "cPF", "telefone"
+            "numeroDoContratoPai", "cPF", "telefone", "observacao"
         ]
-
-        form_field_names_2 = [
-            "dataDeNascimentoDoTitular", "cPFCPNJ", "endereco", "bairro",
-            "cidade", "uf", "cEP", "nomeDoConjugeResponsavelPelaEmpresa",
-            "email", "dataDeNascimento", "prazoDeVigencia", "origemInterna",
-            "origemExterna", "dataDoPagamentoDaImplantacao",
-            "formaDePagamentoDaImplantacao", "diaDaCobrancaRecorrente", "obervacao",
-            "autorizacaoDeCobrancaPelaCorretora", "haveraVinculacaoContratoPai",
-            "numeroDoContratoPai", "cPF", "telefone"
-        ]
-
-        uniqueFormFieldNames = list(set(form_field_names_1 + form_field_names_2))
-        return uniqueFormFieldNames
+      
     def getContractsRequestsByDate(self, token, formattedDate):
             headers = self._getHeaders(token)
             data = {
@@ -238,34 +107,6 @@ class ZeevClient:
             response = requests.post(url, json=data, headers=headers)
             return response.json()
         
-    
-    def _contractDataRequest(self, instanceId, token, data):
-        try:
-            headers = self._getHeaders(token)
-            url = self._getDefaultInstanceReportUrl()
-            data = self._firstStepContractDataRequest(instanceId)
-            response = requests.post(url, json=data, headers=headers)
-
-            if response.status_code == 200:
-                json_response = response.text.replace("'", '"')
-                zeevResponse = json.loads(json_response)
-                hasElements = len(zeevResponse) > 0 and "formFields" in zeevResponse[0]
-                if hasElements:
-                    return zeevResponse[0].get("formFields")
-                else:
-                    return []
-            else:
-                response.raise_for_status()
-                raise Exception(f"fullContractData | error: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            logger.error("fullContractData | Error during request:", exc_info=True)
-            raise
-    def firstStepContractPost(self, instanceId, token):
-        data = self._firstStepContractDataRequest(instanceId)
-        return self._contractDataRequest(instanceId, token, data)
-    def secondStepContractPost(self, instanceId, token):
-        data = self._secondStepContractDataRequest(instanceId)
-        return self._contractDataRequest(instanceId, token, data)
     def instanceIdRequest(self, instanceId, token):
         try:
             headers = self._getHeaders(token, 'application/vnd.api+json')

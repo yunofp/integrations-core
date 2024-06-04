@@ -174,12 +174,11 @@ class ContractsService:
     token = self.zeevClient.generateZeevToken()
 
     for processedRequest in processedRequestsRetries:
-        data = self.zeevClient.secondStepContractPost(processedRequest['requestId'], token)
-        readyToProcess = data[0].get("formFields")[0].get("value")
-        if readyToProcess:
-            serviceType, documentsId = self.processContract(processedRequest['requestId'])
-            self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
-    
+      readyToProcess = None
+      if readyToProcess:
+          serviceType, documentsId = self.processContract(processedRequest['requestId'])
+          self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
+  
   def processAllContracts(self):
     logger.info("processAllContracts | starting to process all contracts")
     contractsRequests = []
