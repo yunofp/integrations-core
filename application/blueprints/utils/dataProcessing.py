@@ -7,11 +7,11 @@ def findByName(list, name):
 def defineVariablesGrow(contractValues):
 
     clickSignVariables = {
-        "nomeCompletoDoTitular": findByName(contractValues, "nomeDoIndicado"),
-        "email": findByName(contractValues, "emailDoIndicado") or findByName(contractValues, "emailDeContato") or findByName(contractValues, "emailDoCliente"),
+        "nomeCompletoDoTitular": findByName(contractValues, "nomeDoCliente-Llaz"),
+        "email": findByName(contractValues, "emailDoCliente"),
         "dataDeNascimento": findByName(contractValues, "dataDeNascimentoDoTitular"),
-        "telefoneDoTitular":  findByName(contractValues, "telefone") or findByName(contractValues, "contatoDoCliente"),
-        "cpfDoTitular":  findByName(contractValues, "cPF") or findByName(contractValues, "cPFCPNJ"),
+        "telefoneDoTitular": findByName(contractValues, "contatoDoCliente"),
+        "cpfDoTitular": findByName(contractValues, "cPFCPNJ"),
         "endereco": findByName(contractValues, "endereco"),
         "bairro": findByName(contractValues, "bairro"),
         "cidade": findByName(contractValues, "cidade"),
@@ -20,18 +20,17 @@ def defineVariablesGrow(contractValues):
         "nomeCompletoDoConjuge": findByName(contractValues, "nomeDoConjugeResponsavelPelaEmpresa"),
         "emailDoConjuge": findByName(contractValues, "email"),
         "dataDeNascimentoDoConjuge": findByName(contractValues, "dataDeNascimento"),
+        "telefoneDoConjuge": findByName(contractValues, "telefone"),
         "prazoDeVigencia": findByName(contractValues, "prazoDeVigencia"),
-        "closerResponsavel": findByName(contractValues, "informeOCloser"),
+        "closerResponsavel": findByName(contractValues, "responsavelPelaContratacao") or findByName(contractValues, "informeOCloser"),
         "origemInterna": findByName(contractValues, "origemInterna"),
         "origemExterna": findByName(contractValues, "origemExterna"),
         "valorDaImplantacao": findByName(contractValues, "valorDeImplantacao"),
-        "pagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
+        "dataDoPagamentoDaImplantacao": findByName(contractValues, "dataDoPagamentoDaImplantacao"),
         "formaDePagamentoDaImplantacao": findByName(contractValues, "formaDePagamentoDaImplantacao"),
         "fee": findByName(contractValues, "valorDoFEE"),
-        "diaDeCobrançaDoFee": findByName(contractValues, "diaDeCobrançaDoFee"),
+        "diaDeCobrançaDoFee": findByName(contractValues, "diaDaCobrancaRecorrente"),
         "observacoes": findByName(contractValues, "observacao"),
-        "telefoneDoConjuge": findByName(contractValues, "telefone"),
-        "qualOTipoDeTrabalho": findByName(contractValues, "qualOTipoDeTrabalho"),
     }
     return clickSignVariables
 

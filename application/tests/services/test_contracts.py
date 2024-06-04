@@ -4,6 +4,7 @@ from flask import Flask
 import logging
 from application.tests.populate import zeev_responses
 from application.blueprints.services.contracts import ContractsService
+from application.blueprints.utils.dataProcessing import defineVariablesGrow
 
 logger = logging.getLogger(__name__)
 @pytest.fixture
@@ -25,7 +26,7 @@ def service(app_context):
     contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient)
     return contractService, zeevClient, processedRequestRepository, clickSignClient
 
-def test_process_sucess_grow_contract(service, mocker):
+def test_should_process_sucess_grow_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.response)
@@ -45,3 +46,11 @@ def test_process_sucess_grow_contract(service, mocker):
     spyInsert.assert_called_once_with(requestId, 'Grow', [1])
 
     assert spyInsert.call_args == call(requestId, 'Grow', [1])
+
+def test_should_get_correct_clicksign_variables_sucess_grow_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+   
+    clicksignVariables = defineVariablesGrow(zeev_responses.response)
+    
+    
+    
