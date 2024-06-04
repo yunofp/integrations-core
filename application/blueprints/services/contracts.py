@@ -219,5 +219,6 @@ class ContractsService:
         serviceType, documentsId = self.processContract(requestId ,contractValues)
         self._insertSuccessfullyProcessedRequest(requestId, serviceType, documentsId)
       except Exception as e:
+        
         self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
         logger.error("processAllContracts | Error processing contract:" + str(requestId), exc_info=True)
