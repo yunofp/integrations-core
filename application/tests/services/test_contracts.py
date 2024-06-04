@@ -107,7 +107,37 @@ def test_should_get_correct_clicksign_variables_sucess_wealth_contract():
     assert clicksignVariables.get('vincularAContratoPai') == 'Sim'
     assert clicksignVariables.get('numeroDoContratoPai') == 'NAO SE APLICA'
     
+def test_should_get_correct_clicksign_variables_success_work_contract():    
+    clicksignVariables = defineVariablesWork(zeev_responses.work_response[0].get('formFields'))
     
+    assert clicksignVariables.get('nomeDaEmpresa') == 'Nikolai Fraiture'
+    assert clicksignVariables.get('emailDeContato') == 'tarcisio.campos@yunofp.com.br'
+    assert clicksignVariables.get('telefoneDaEmpresa') == '(64)99345-6689'
+    assert clicksignVariables.get('cnpj') == '070-761-681-62'
+    assert clicksignVariables.get('endereco') == 'Av 7 De Setembro'
+    assert clicksignVariables.get('bairro') == 'Centro'
+    assert clicksignVariables.get('cidade') == 'Joviânia'
+    assert clicksignVariables.get('uf') == ''
+    assert clicksignVariables.get('cep') == '75610-000'
+    assert clicksignVariables.get('nomeCompletoDoResponsavel') == 'Nikolai Fraiture'
+    assert clicksignVariables.get('cargoDoResponsavel') == 'Arquiteto'
+    assert clicksignVariables.get('emailDoResponsavel') == 'nikolaifraituressss@gmail.com'
+    assert clicksignVariables.get('dataDeNascimentoDoResponsavel') == '14/05/1997'
+    assert clicksignVariables.get('cpfDoResponsavel') == '000.000.000-00'
+    assert clicksignVariables.get('telefoneDoResponsavel') == '(62)99345-6689'
+    assert clicksignVariables.get('prazoDeVigencia') == '2'
+    assert clicksignVariables.get('closerResponsavel') == 'aristeu'
+    assert clicksignVariables.get('origemInterna') == 'Tarcísio Campos'
+    assert clicksignVariables.get('origemExterna') == 'ORIGEM EXTERNA'
+    assert clicksignVariables.get('valorDaImplantacão') == '400,00'
+    assert clicksignVariables.get('dataDoPagamentoDaImplantacao') == '08/05/2024'
+    assert clicksignVariables.get('formaDePagamentoDaImplantacao') == 'PIX'
+    assert clicksignVariables.get('fee') == '2,00'
+    assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
+    assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
+
+    
+        
 
     
     
