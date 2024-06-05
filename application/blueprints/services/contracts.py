@@ -212,7 +212,7 @@ class ContractsService:
       
       if not isContractCompletelyFilledToProcess:
         logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
-        self._insertFailedProcessedRequest(requestId, True, None, None, True)
+        self._insertFailedProcessedRequest(requestId, True, 'Contract not completely filled to process', 'waitingFill', True)
         continue
       try:
        
