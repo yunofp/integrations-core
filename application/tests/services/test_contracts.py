@@ -48,6 +48,26 @@ def test_should_process_sucess_grow_contract(service, mocker):
 
     assert spyInsert.call_args == call(requestId, 'Grow', [1])
     
+def test_should_process_many_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    
+    manyContractsReponse = list(zeev_responses.grow_response) + list(zeev_responses.wealth_response) + list(zeev_responses.grow_response_not_filled)
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=manyContractsReponse)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+    
+    spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')  
+    spyInsertFaled = mocker.spy(contractService, '_insertFailedProcessedRequest')
+    contractService.processAllContracts()
+    assert spyInsert.call_count == 2
+    assert spyInsertFaled.call_count == 1
+    
 def test_should_save_failed_grow_contract_request(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.grow_response[0]['id']
@@ -79,7 +99,6 @@ def test_should_save_failed_grow_contract_request(service, mocker):
 
 def test_retry_grow_contract_save_on_incomplete_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
-    requestId = zeev_responses.grow_response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response_not_filled)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
     clickSignClient.createEnvelope = MagicMock(return_value=1)
@@ -100,7 +119,6 @@ def test_retry_grow_contract_save_on_incomplete_contract(service, mocker):
     assert expectedSaveRequest.get('createdAt') is not None
     assert expectedSaveRequest.get('validNewClient') == True
     assert expectedSaveRequest.get('status') == {'name': 'waitingFill', 'description': 'Contract not completely filled to process'}
-
 
 def test_should_get_correct_clicksign_variables_sucess_grow_contract():
     clicksignVariables = defineVariablesGrow(zeev_responses.grow_response[0].get('formFields'))
