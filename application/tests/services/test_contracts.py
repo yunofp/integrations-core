@@ -209,7 +209,20 @@ def test_should_get_correct_clicksign_variables_success_work_contract():
     assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
     assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
 
+def test_should_not_process_saved_request(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
     
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=True)
+    
+    spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')  
+    spyInsertFaled = mocker.spy(contractService, '_insertFailedProcessedRequest')
+    contractService.processAllContracts()
+    assert spyInsert.call_count == 0
+    assert spyInsertFaled.call_count == 0
+    
+   
+     
         
 
     
