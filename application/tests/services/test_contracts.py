@@ -44,9 +44,59 @@ def test_should_process_sucess_grow_contract(service, mocker):
      
     contractService.processAllContracts()
     
-    spyInsert.assert_called_once_with(requestId, 'Grow', [1])
+    spyInsert.assert_called_once_with(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
 
-    assert spyInsert.call_args == call(requestId, 'Grow', [1])
+    assert spyInsert.call_args == call(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
+
+def test_should_process_sucess_wealth_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    requestId = zeev_responses.wealth_response[0]['id']
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.wealth_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+    
+    spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')  
+     
+    contractService.processAllContracts()
+    
+    spyInsert.assert_called_once_with(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
+
+    assert spyInsert.call_args == call(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
+    
+    
+    
+def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    
+    requestId = zeev_responses.grow_response_wealth_response[0]['id']
+  
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response_wealth_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 2}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+
+    spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')
+
+    # Call the method that processes all contracts
+    contractService.processAllContracts()
+    # Assert that the _insertSuccessfullyProcessedRequest method was called once with the correct arguments
+    spyInsert.assert_called_once_with(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
+
+    # Additional check to compare call arguments
+    assert spyInsert.call_args == call(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
+
     
 def test_should_process_many_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service

@@ -28,34 +28,42 @@ class ContractsService:
       raise Exception("processContract | No work type found for request:" + requestId)
 
     workTypeFormatted = formatting.formatServiceType(workType)
-    
-    documentsId = []
+
+    documents = []
     
     if workTypeFormatted == "Grow":
       
       contractVariables = dataProcessing.defineVariablesGrow(contractValues)
-  
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
-      documentsId.append(documentId)
+      documents.append({'type': 'Grow', 'id': documentId})
+     
     elif workTypeFormatted == "Wealth":
+      
       contractVariables = dataProcessing.defineVariablesWealth(contractValues)
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
-      documentsId.append(documentId)
+      documents.append({'type': 'Wealth', 'id': documentId})
+      
     elif workTypeFormatted == "Work":
+      
       contractVariables = dataProcessing.defineVariablesWork(contractValues)
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
-      documentsId.append(documentId)
+      documents.append({'type': 'Work', 'id': documentId})
+      
     elif workTypeFormatted == "Grow & Wealth":
+      
       contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
       contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
-      documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, workTypeFormatted)
-      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId, workTypeFormatted)
-      documentsId.extend([documentIdGrow, documentIdWealth])
+     
+      documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
+      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId, 'Wealth')
+      
+      documents.extend([{'type': 'Grow', 'id': documentIdGrow}, {'type': 'Wealth', 'id': documentIdWealth}])
+      
     else:
         logger.error("processContract | Unknown service type:" + workTypeFormatted)
         return None
 
-    return workTypeFormatted, documentsId
+    return workTypeFormatted, documents
 
   def _definePhoneNumber(self, contractVariables):
     if self.config.get('PHONE_NUMBER_DEBUG'):
@@ -70,16 +78,22 @@ class ContractsService:
       documentId = None
    
       if contractType == 'Grow':
+        
         growResponse = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
         documentId = growResponse.get('data', {}).get('id')
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(growResponse))
+        
       elif contractType == 'Wealth':
+        
         wealthResponse = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
         documentId = wealthResponse.get('data', {}).get('id')
+        
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(wealthResponse))
+        
       elif contractType == 'Work':
+        
         workResponse = self.clickSignClient.sendClickSignPostWork(contractVariables, envelopeId, filename)
         documentId = workResponse.get('data', {}).get('id')
         if not documentId:
@@ -114,7 +128,7 @@ class ContractsService:
     phrase = phrase.lower()
     return phrase == expectedPhrase
   
-  def _insertSuccessfullyProcessedRequest(self, requestId, serviceType, documentsId):
+  def _insertSuccessfullyProcessedRequest(self, requestId, serviceType, documents):
     try:
       status = {
         'name': 'send',
@@ -125,7 +139,7 @@ class ContractsService:
           'type': serviceType,
           'validNewClient': True,
           'requestId': requestId,
-          'documentId': documentsId,
+          'documentId': documents,
           'status': status,
           'createdAt': datetime.now(timezone.utc)
       })
@@ -143,7 +157,7 @@ class ContractsService:
           'type': serviceType,
           'validNewClient': True,
           'requestId': requestId,
-          'documentsId': documentsId,
+          'documents': documentsId,
           'status': status,
           'updatedAt': datetime.now(timezone.utc)
       })
@@ -216,8 +230,8 @@ class ContractsService:
         continue
       try:
        
-        serviceType, documentsId = self.processContract(requestId ,contractValues)
-        self._insertSuccessfullyProcessedRequest(requestId, serviceType, documentsId)
+        serviceType, documents = self.processContract(requestId ,contractValues)
+        self._insertSuccessfullyProcessedRequest(requestId, serviceType, documents)
       except Exception as e:
         
         self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
