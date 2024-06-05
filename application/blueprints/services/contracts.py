@@ -139,14 +139,14 @@ class ContractsService:
           'type': serviceType,
           'validNewClient': True,
           'requestId': requestId,
-          'documentId': documents,
+          'documents': documents,
           'status': status,
           'createdAt': datetime.now(timezone.utc)
       })
     except Exception as e:
       logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + requestId, exc_info=True)
   
-  def _updateSuccessfullyProcessedRequest(self, requestId, serviceType, documentsId):
+  def _updateSuccessfullyProcessedRequest(self, requestId, serviceType, documentsData):
     try:
       status = {
         'name': 'send',
@@ -157,12 +157,25 @@ class ContractsService:
           'type': serviceType,
           'validNewClient': True,
           'requestId': requestId,
-          'documents': documentsId,
+          'documents': documentsData,
           'status': status,
           'updatedAt': datetime.now(timezone.utc)
       })
     except Exception as e:
       logger.error("_updateSuccessfullyProcessedRequest | Error updating successfully processed request:" + requestId, exc_info=True)
+
+  def _updateFailedProcessedRequest(self,requestId, statusName, statusDescription):
+    try:
+      status = {
+        'name': statusName,
+        'descritpion': statusDescription
+      }
+      self.processedRequestRepository.updateOne(requestId, {
+          'status': status,
+          'updatedAt': datetime.now(timezone.utc)
+      })
+    except Exception as e:
+      logger.error("_updateFailedProcessedRequest | Error updating successfully processed request:" + requestId, exc_info=True)
 
   def _insertFailedProcessedRequest(self, requestId, tryAgain, errorMessage, statusName=None, validNewClient=False):
       try:
@@ -184,14 +197,32 @@ class ContractsService:
           logger.error("_insertFailedProcessedRequest | Error inserting failed processed request:" + requestId, exc_info=True)
 
   def runTryAgain(self):
-    processedRequestsRetries = self.processedRequestRepository.getManyRetries()
-    token = self.zeevClient.generateZeevToken()
+      try:
+          processedRequestsRetries = self.processedRequestRepository.getManyRetries()
+          token = self.zeevClient.generateZeevToken()
+          
+          for processedRequest in processedRequestsRetries:
+              requestId = processedRequest.get('requestId')
+              
+              contractRequest = self.zeevClient.getContractRequestById(token, requestId)
+              contractValues = contractRequest['formFields']
+              
+              isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
+              
+              if not isContractCompletelyFilledToProcess:
+                  continue
+              
+              try:
+                  serviceType, documents = self.processContract(requestId, contractValues)
+                  self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documents)
+              except Exception as e:
+                  self._updateFailedProcessedRequest(processedRequest['requestId'], 'Error', 'Retry Process error ' + str(e))
+                  logger.error("runTryAgain | Error processing contract: " + str(e), exc_info=True)
+                  continue
+              
+      except Exception as e:
+          logger.error("runTryAgain | Error running try again: " + str(e), exc_info=True)
 
-    for processedRequest in processedRequestsRetries:
-      readyToProcess = None
-      if readyToProcess:
-          serviceType, documentsId = self.processContract(processedRequest['requestId'])
-          self._updateSuccessfullyProcessedRequest(processedRequest['requestId'], serviceType, documentsId)
   
   def processAllContracts(self):
     logger.info("processAllContracts | starting to process all contracts")
@@ -228,8 +259,9 @@ class ContractsService:
         logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
         self._insertFailedProcessedRequest(requestId, True, 'Contract not completely filled to process', 'waitingFill', True)
         continue
+      
       try:
-       
+
         serviceType, documents = self.processContract(requestId ,contractValues)
         self._insertSuccessfullyProcessedRequest(requestId, serviceType, documents)
       except Exception as e:
