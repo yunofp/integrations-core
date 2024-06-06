@@ -311,9 +311,46 @@ def test_should_process_retry_contract(service, mocker):
     
     spyUpdate.assert_called_once_with(1, 'Grow', [{'type': 'Grow', 'id': 1}])
     assert spyUpdate.call_args == call(1, 'Grow', [{'type': 'Grow', 'id': 1}])
+
+def test_should_not_process_retry_when_contract_is_not_fully_filled(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
     
-  
-     
+    retryDocument = {
+        '_id': '1',
+        'tryAgain': True,
+        'requestId': 1,
+        'createdAt': datetime.now(timezone.utc),
+        'validNewClient': True,
+        'status':{
+            'name': 'waitingFill',
+            'description': 'Contract not completely filled to process'
+        }
+    }
+          
+    processedRequestRepository.getManyRetries = MagicMock(return_value=[retryDocument])
+    zeevClient.generateZeevToken = MagicMock(return_value='token')
+    zeevClient.getContractRequestById = MagicMock(return_value=zeev_responses.grow_response_not_filled[0])
+    
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 2}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+
+    spyUpdateSucess = mocker.spy(contractService, '_updateSuccessfullyProcessedRequest')
+    spyUpdateFailed = mocker.spy(contractService, '_updateFailedProcessedRequest')
+    spyRepository = mocker.spy(processedRequestRepository, 'updateOne')
+
+    contractService.runTryAgain()
+    
+    assert spyUpdateSucess.call_count == 0
+    assert spyRepository.call_count == 0
+    assert spyUpdateFailed.call_count == 0
+
+    
         
 
     
