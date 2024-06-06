@@ -8,8 +8,10 @@ def app():
     database.init_app = Mock()
     app = appRoot.create_app()
     app.config.update({
-        "TESTING": True,
+        "TESTING": True
     })
+    with app.app_context():
+        app.db = Mock()
     yield app
 
 
