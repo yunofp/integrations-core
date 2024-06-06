@@ -1,19 +1,16 @@
 import pytest
-
+from unittest.mock import Mock
 from application import app as appRoot
+from application.extensions import database
 
 @pytest.fixture()
 def app():
+    database.init_app = Mock()
     app = appRoot.create_app()
     app.config.update({
         "TESTING": True,
     })
-
-    # other setup can go here
-
     yield app
-
-    # clean up / reset resources here
 
 
 @pytest.fixture()
