@@ -6,6 +6,7 @@ from application.tests.populate import zeev_responses
 from application.blueprints.services.contracts import ContractsService
 from application.blueprints.repositories.processedRequestRepository import ProcessedRequestsRepository
 from application.blueprints.utils.dataProcessing import defineVariablesGrow, defineVariablesWealth, defineVariablesWork
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 @pytest.fixture
@@ -47,7 +48,6 @@ def test_should_process_sucess_grow_contract(service, mocker):
     spyInsert.assert_called_once_with(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
 
     assert spyInsert.call_args == call(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
-
 def test_should_process_sucess_wealth_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.wealth_response[0]['id']
@@ -69,8 +69,6 @@ def test_should_process_sucess_wealth_contract(service, mocker):
 
     assert spyInsert.call_args == call(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
     
-    
-    
 def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     
@@ -89,15 +87,11 @@ def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
 
     spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')
 
-    # Call the method that processes all contracts
     contractService.processAllContracts()
-    # Assert that the _insertSuccessfullyProcessedRequest method was called once with the correct arguments
-    spyInsert.assert_called_once_with(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
-
-    # Additional check to compare call arguments
-    assert spyInsert.call_args == call(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
-
     
+    spyInsert.assert_called_once_with(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
+    assert spyInsert.call_args == call(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
+ 
 def test_should_process_many_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     
@@ -271,7 +265,54 @@ def test_should_not_process_saved_request(service, mocker):
     assert spyInsert.call_count == 0
     assert spyInsertFaled.call_count == 0
     
-   
+def test_should_process_retry_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    
+    retryDocument = {
+        '_id': '1',
+        'tryAgain': True,
+        'requestId': 1,
+        'createdAt': datetime.now(timezone.utc),
+        'validNewClient': True,
+        'status':{
+            'name': 'waitingFill',
+            'description': 'Contract not completely filled to process'
+        }
+    }
+          
+    processedRequestRepository.getManyRetries = MagicMock(return_value=[retryDocument])
+    zeevClient.generateZeevToken = MagicMock(return_value='token')
+    zeevClient.getContractRequestById = MagicMock(return_value=zeev_responses.grow_response[0])
+    
+    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 2}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+
+    spyUpdate = mocker.spy(contractService, '_updateSuccessfullyProcessedRequest')
+    spyRepository = mocker.spy(processedRequestRepository, 'updateOne')
+
+    contractService.runTryAgain()
+    
+    expectedSaveRequest = spyRepository.call_args[0][1]
+
+    assert expectedSaveRequest.get('tryAgain') == False
+    assert expectedSaveRequest.get('type') == 'Grow'
+    assert expectedSaveRequest.get('validNewClient') == True
+    assert expectedSaveRequest.get('requestId') == 1
+    assert expectedSaveRequest.get('documents') == [{'type': 'Grow', 'id': 1}]
+    assert expectedSaveRequest.get('updatedAt') is not None
+    assert expectedSaveRequest.get('status') == {'name': 'send', 'descritpion': 'delivered'}
+
+    
+    spyUpdate.assert_called_once_with(1, 'Grow', [{'type': 'Grow', 'id': 1}])
+    assert spyUpdate.call_args == call(1, 'Grow', [{'type': 'Grow', 'id': 1}])
+    
+  
      
         
 

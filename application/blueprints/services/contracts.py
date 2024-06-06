@@ -199,11 +199,11 @@ class ContractsService:
   def runTryAgain(self):
       try:
           processedRequestsRetries = self.processedRequestRepository.getManyRetries()
+        
           token = self.zeevClient.generateZeevToken()
           
           for processedRequest in processedRequestsRetries:
               requestId = processedRequest.get('requestId')
-              
               contractRequest = self.zeevClient.getContractRequestById(token, requestId)
               contractValues = contractRequest['formFields']
               
