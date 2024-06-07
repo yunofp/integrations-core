@@ -1,10 +1,14 @@
+# Arquivos gerados automaticamente
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
 .env
+
 /app.log
-/*.log
+*.log
+
 *.cache
+
 settings.toml
