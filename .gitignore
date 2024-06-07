@@ -4,7 +4,7 @@ __pycache__/
 *.pyd
 
 .env
-
+app.log
 *.log
 *.cache
 settings.toml
