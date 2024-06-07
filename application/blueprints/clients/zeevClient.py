@@ -103,7 +103,7 @@ class ZeevClient:
                 "StartDateIntervalBegin": formattedDate,
                 "StartDateIntervalEnd": formattedDate,
                 "recordsPerPage": 100,
-                "formFieldNames": self._mergeFormFieldNames()
+                "formFieldNames": self._FormFieldNames()
             }
             url = self._getDefaultInstanceReportUrl()
             response = requests.post(url, json=data, headers=headers)
@@ -117,7 +117,7 @@ class ZeevClient:
                 "instanceId": instanceId,
                 "flowId": zeevNewClientFlowId,
                 "recordsPerPage": 100,
-                "formFieldNames": self._mergeFormFieldNames()
+                "formFieldNames": self._FormFieldNames()
             }
             url = self._getDefaultInstanceReportUrl()
             response = requests.post(url, json=data, headers=headers)

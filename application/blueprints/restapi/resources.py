@@ -22,7 +22,7 @@ class ContractsResource(Resource):
     thread = threading.Thread(target=self.service.processAllContracts)
     thread.start()
 
-    return jsonify({"message": "accepted"}), 202
+    return jsonify({'message': 'Process accepted'})
 class ContractsResourceRetry(Resource):
   
   def get(self):
@@ -39,4 +39,8 @@ class ContractsResourceRetry(Resource):
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
     self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient)
-    self.service.runTryAgain()
+    
+    thread = threading.Thread(target=self.service.runTryAgain)
+    thread.start()
+
+    return jsonify({'message': 'Request retry accepted'})

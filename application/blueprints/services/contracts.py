@@ -23,7 +23,7 @@ class ContractsService:
   def processContract(self, requestId, contractValues):
     envelopeId = self.clickSignClient.createEnvelope()
     workType = dataProcessing.findByName(contractValues, "qualOTipoDeTrabalho")
-    
+    print('aquiiiiiiiii', workType)
     if not workType:
       raise Exception("processContract | No work type found for request:" + requestId)
 
@@ -62,7 +62,7 @@ class ContractsService:
     else:
         logger.error("processContract | Unknown service type:" + workTypeFormatted)
         return None
-
+    logger.info("processContract | workType:" + workTypeFormatted)
     return workTypeFormatted, documents
 
   def _definePhoneNumber(self, contractVariables):
@@ -203,9 +203,15 @@ class ContractsService:
           token = self.zeevClient.generateZeevToken()
           
           for processedRequest in processedRequestsRetries:
+              logger.info('runTryAgain | started to process contract: ' + str(processedRequest))
               requestId = processedRequest.get('requestId')
               contractRequest = self.zeevClient.getContractRequestById(token, requestId)
-              contractValues = contractRequest['formFields']
+              
+              if not contractRequest:
+                  self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
+                  continue
+                
+              contractValues = contractRequest[0]['formFields']
               
               isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
               
