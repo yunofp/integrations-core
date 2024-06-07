@@ -235,7 +235,7 @@ class ContractsService:
     contractsRequests = []
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      now = datetime(2024, 5, 29)
+      now = datetime.now()
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
     except requests.exceptions.RequestException as e:
