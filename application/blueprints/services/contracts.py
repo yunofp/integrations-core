@@ -22,10 +22,10 @@ class ContractsService:
     
   def processContract(self, requestId, contractValues):
     envelopeId = self.clickSignClient.createEnvelope()
-    workType = dataProcessing.findByName(contractValues, "qualOTipoDeTrabalho")
-    print('aquiiiiiiiii', workType)
-    if not workType:
-      raise Exception("processContract | No work type found for request:" + requestId)
+    workType = dataProcessing.findByName(contractValues, "qualSeraOContrato")
+
+    if not workType or 'Não sei' in workType:
+      raise Exception("processContract | Invalid work type:" + str(requestId))
 
     workTypeFormatted = formatting.formatServiceType(workType)
 
@@ -210,8 +210,8 @@ class ContractsService:
               if not contractRequest:
                   self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
                   continue
-                
-              contractValues = contractRequest[0]['formFields']
+
+              contractValues = contractRequest['formFields']
               
               isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
               

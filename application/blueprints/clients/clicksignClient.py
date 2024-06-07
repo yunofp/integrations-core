@@ -196,7 +196,7 @@ class ClicksignClient:
                         "communicate_events":{
                             "document_signed":"whatsapp",
                             "signature_request":"whatsapp",
-                            # "signature_reminder":"email"
+                            "signature_reminder":"email"
                         }
                     }
                 }

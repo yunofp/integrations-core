@@ -91,7 +91,7 @@ class ZeevClient:
             "prazoDeVigencia", "origemInterna", "origemExterna", "dataDoPagamentoDaImplantacao",
             "formaDePagamentoDaImplantacao", "diaDaCobrancaRecorrente", "obervacao",
             "autorizacaoDeCobrancaPelaCorretora", "haveraVinculacaoContratoPai",
-            "numeroDoContratoPai", "cPF", "telefone", "observacao"
+            "numeroDoContratoPai", "cPF", "telefone", "observacao", "qualSeraOContrato"
         ]
       
     def getContractsRequestsByDate(self, token, formattedDate):
