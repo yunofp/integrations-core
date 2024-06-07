@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM --platform=linux/amd64 python:3.9
 
 WORKDIR /api-flask
 
@@ -11,7 +11,7 @@ COPY application/ /api-flask/application/
 
 RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
+EXPOSE 3000
 
 WORKDIR /api-flask/application/
 
