@@ -13,4 +13,4 @@ RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 3000
 
-CMD ["flask", "run"]
+CMD ["waitress-serve", "--listen=*:3000", "application.app:app"]

@@ -7,3 +7,4 @@ mongomock
 pymongo
 python-dotenv
 requests
+waitress

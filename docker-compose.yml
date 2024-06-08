@@ -7,7 +7,6 @@ services:
       - FLASK_APP=application/app.py
       - FLASK_ENV=production
     ports:
-      - "3000:5000"
+      - "3000:3000"
     volumes:
       - .:/api-flask
-    command: flask run
