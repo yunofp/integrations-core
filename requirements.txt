@@ -4,3 +4,6 @@ flask-restful==0.3.10
 pytest
 pytest-flask
 mongomock
+pymongo
+python-dotenv
+requests

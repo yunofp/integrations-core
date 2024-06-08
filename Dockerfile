@@ -13,6 +13,4 @@ RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 3000
 
-WORKDIR /api-flask/application/
-
 CMD ["flask", "run"]
