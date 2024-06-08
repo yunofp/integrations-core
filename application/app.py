@@ -11,3 +11,5 @@ def create_app():
   restapi.init_app(app)
 
   return app
+
+app = create_app()
