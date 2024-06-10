@@ -61,4 +61,4 @@ jobs:
           ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} "\
           sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:$VERSION|' docker-compose.yaml; \
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin && \
-          docker-compose -f compose/docker-compose.yaml up -d"
+          docker-compose -f docker-compose.yaml up -d"
