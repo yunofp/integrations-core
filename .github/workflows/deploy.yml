@@ -46,15 +46,15 @@ jobs:
           docker buildx build -t $DOCKER_USERNAME/integrations-core:$VERSION . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
-          
+
       - name: SSH into Droplet and run commands
-              run: |
-                ssh -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
-                  echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                  cd /path/to/compose
-                  docker compose -f docker-compose.yaml pull
-                  docker compose -f docker-compose.yaml up -d
-                EOF
-              env:
-                DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-                DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            cd /path/to/compose
+            docker compose -f docker-compose.yaml pull
+            docker compose -f docker-compose.yaml up -d
+          EOF
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
