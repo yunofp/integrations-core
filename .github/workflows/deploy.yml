@@ -42,6 +42,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_SETTINGS_TOML: ${{ secrets.DOCKER_SETTINGS_TOML }}
         run: |
+          echo $DOCKER_SETTINGS_TOML
           docker buildx create --use
           docker buildx inspect --bootstrap
           VERSION=$(cat VERSION.txt)
