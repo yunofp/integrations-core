@@ -48,9 +48,6 @@ jobs:
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
 
-      - name: Set VERSION
-        id: version
-        run: echo "::set-output name=version::$(cat VERSION.txt)
 
       - name: SSH into Droplet and run commands
         env:
