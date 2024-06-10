@@ -12,6 +12,8 @@ RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 RUN echo "$DOCKER_SETTINGS_TOML" > /api-flask/settings.toml
 
+RUN echo "$DOCKER_SETTINGS_TOML" > settings.tmp && cat settings.tmp
+
 EXPOSE 3000
 
 CMD ["waitress-serve", "--listen=*:3000", "application.app:app"]
