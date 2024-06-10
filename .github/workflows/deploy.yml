@@ -50,4 +50,4 @@ jobs:
       - name: SSH into Droplet and run commands
         run: |
           ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} "\
-          docker-compose -f compose/docker-compose.yaml up -d"
+          docker compose -f compose/docker-compose.yaml up -d"
