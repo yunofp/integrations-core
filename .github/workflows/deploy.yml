@@ -49,9 +49,9 @@ jobs:
 
       - name: SSH into Droplet and run commands
         run: |
-          ssh -tt -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << EOF
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            cd /path/to/compose
+            cd /compose
             docker compose -f docker-compose.yaml pull
             docker compose -f docker-compose.yaml up -d
           EOF
