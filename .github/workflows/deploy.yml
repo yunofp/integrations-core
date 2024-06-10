@@ -16,6 +16,7 @@ jobs:
           VERSION=$(cat VERSION.txt)
           echo "::set-output name=version::$VERSION"
 
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -46,22 +47,16 @@ jobs:
           docker buildx build -t $DOCKER_USERNAME/integrations-core:$VERSION . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
-      
-      - name: SSH into Droplet and log in to Docker
+
+      - name: Set VERSION
+        id: version
+        run: echo "::set-output name=version::$(cat VERSION.txt)
+
+      - name: SSH into Droplet and run commands
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh -tt -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          EOF
-
-
-      - name: SSH into Droplet and run commands
-        env:
-            DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-            DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} "\
-          docker compose -f compose/docker-compose.yaml up -d"
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin && \
+          docker-compose -f compose/docker-compose.yaml up -d"
