@@ -45,12 +45,12 @@ jobs:
           docker buildx create --use
           docker buildx inspect --bootstrap
           VERSION=$(cat VERSION.txt)
-          docker buildx build --build-arg DOCKER_SETTINGS_TOML="${{ secrets.DOCKER_SETTINGS_TOML }}" -t $DOCKER_USERNAME/integrations-core:$VERSION . --load
+          docker buildx build -t $DOCKER_USERNAME/integrations-core:$VERSION \
+                              --build-arg DOCKER_SETTINGS_TOML="${DOCKER_SETTINGS_TOML}" \
+                              --build-arg VERSION="${VERSION}" \
+                              . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
-        
-          
-
 
       - name: SSH into Droplet and run commands
         env:
