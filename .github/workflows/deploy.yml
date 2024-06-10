@@ -16,7 +16,6 @@ jobs:
           VERSION=$(cat VERSION.txt)
           echo "::set-output name=version::$VERSION"
 
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -47,10 +46,6 @@ jobs:
           docker buildx build -t $DOCKER_USERNAME/integrations-core:$VERSION . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
-
-      - name: Set VERSION
-        id: version
-        run: echo "::set-output name=version::$(cat VERSION.txt)
 
       - name: SSH into Droplet and run commands
         run: |
