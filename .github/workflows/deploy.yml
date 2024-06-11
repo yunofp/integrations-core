@@ -44,9 +44,6 @@ jobs:
           mkdir -p ./app/secrets  # Garantir que o diretório exista
           echo "${DOCKER_SETTINGS_TOML}" | tr '|' '\n' > ./app/secrets/settings.toml
 
-          echo "Conteúdo de settings.toml:"
-          cat ./app/secrets/settings.toml
-
           docker buildx create --use
           docker buildx inspect --bootstrap
           VERSION=$(cat VERSION.txt)
@@ -62,9 +59,10 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} "\
-          cd compose && \
-          sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:$VERSION|' docker-compose.yaml; \
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin && \
-          ls -la && \
-          docker-compose -f ./docker-compose.yaml up -d"
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
+            cd compose
+            sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:$VERSION|' docker-compose.yaml
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            ls -la
+            docker-compose -f docker-compose.yaml up -d
+          EOF
