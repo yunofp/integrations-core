@@ -16,7 +16,6 @@ jobs:
           VERSION=$(cat VERSION.txt)
           echo "::set-output name=version::$VERSION"
 
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -36,22 +35,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      
-
       - name: Build and Push Docker Image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_SETTINGS_TOML: ${{ secrets.DOCKER_SETTINGS_TOML }}
         run: |
-          echo $DOCKER_SETTINGS_TOML >./app/secrets/settings.toml
+          mkdir -p ./app/secrets  # Ensure the directory exists
+          echo $DOCKER_SETTINGS_TOML > ./app/secrets/settings.toml
           docker buildx create --use
           docker buildx inspect --bootstrap
           VERSION=$(cat VERSION.txt)
           docker buildx build -t $DOCKER_USERNAME/integrations-core:$VERSION \
                               --build-arg DOCKER_SETTINGS_TOML=./app/secrets/settings.toml \
                               --build-arg VERSION="$VERSION" \
-                            . --load
+                              . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
 
