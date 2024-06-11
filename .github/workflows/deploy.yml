@@ -43,12 +43,10 @@ jobs:
         run: |
           mkdir -p ./app/secrets  # Ensure the directory exists
           echo $DOCKER_SETTINGS_TOML > ./app/secrets/settings.toml
-          echo "Length of each line in settings.toml:"
+          echo "Content of settings.toml (line by line):"
           while IFS= read -r line; do
-            echo ${#line}
-          done <<< "${DOCKER_SETTINGS_TOML}"
-
-          cat ./app/secrets/settings.toml
+            echo "$line"
+          done < ./app/secrets/settings.toml
           docker buildx create --use
           docker buildx inspect --bootstrap
           VERSION=$(cat VERSION.txt)
