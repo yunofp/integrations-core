@@ -53,17 +53,18 @@ jobs:
                             . --load
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
           docker push $DOCKER_USERNAME/integrations-core:$VERSION
-          
-        - name: SSH into Droplet and run commands
-          env:
-            DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-            DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-            VERSION: ${{ steps.get_version.outputs.version }}
-          run: |
-            ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} << EOF
-              cd compose
-              sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:${VERSION}|' docker-compose.yaml
-              echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-              ls -la
-              docker-compose -f docker-compose.yaml up -d
-            EOF
+
+      - name: SSH into Droplet and run commands
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} << EOF
+            cd compose
+            sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:${VERSION}|' docker-compose.yaml
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            ls -la
+            docker-compose -f docker-compose.yaml up -d
+          EOF
+
