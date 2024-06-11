@@ -58,9 +58,10 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} "\
-          cd compose && \
-          sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:$VERSION|' docker-compose.yaml; \
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin && \
-          ls -la && \
-          docker-compose -f ./docker-compose.yaml up -d"
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
+            cd compose
+            sed -i 's|image: realcfdev/integrations-core:.*|image: realcfdev/integrations-core:${{ steps.get_version.outputs.version }}|' docker-compose.yaml
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            ls -la
+            docker-compose -f docker-compose.yaml up -d
+          EOF
