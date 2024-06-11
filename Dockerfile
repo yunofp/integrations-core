@@ -2,7 +2,7 @@ FROM --platform=linux/amd64 python:3.9
 
 WORKDIR /api-flask
 
-COPY.env /api-flask/
+COPY .env /api-flask/
 COPY app.log /api-flask/
 COPY pytest.ini /api-flask/
 COPY requirements.txt /api-flask/
