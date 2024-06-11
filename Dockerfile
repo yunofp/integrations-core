@@ -9,7 +9,7 @@ COPY requirements.txt /api-flask/
 COPY application/ /api-flask/application/
 
 ARG DOCKER_SETTINGS_TOML
-RUN cp $DOCKER_SETTINGS_TOML /api-flask/settings.toml
+COPY ${DOCKER_SETTINGS_TOML} /api-flask/settings.toml
 
 RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
