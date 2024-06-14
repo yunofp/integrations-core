@@ -116,6 +116,7 @@ class ContractsService:
       qualificationRequirementsId = qualificationRequirementsResponse.get('data', {}).get('id')
       
       if not qualificationRequirementsId:
+        logger.error("processContract | data:", " envelopeId: ", envelopeId, " signerId: ", signerId," documentId: ", documentId )
         raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  
     
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
