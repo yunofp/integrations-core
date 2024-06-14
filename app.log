@@ -1,4 +1,0 @@
-[2024-06-08 18:18:32] [INFO] - Logging is configured.
-[2024-06-08 18:18:34] [INFO] - init_app | Successfully connected to the MongoDB database.
-[2024-06-08 18:18:34] [INFO] - Serving on http://0.0.0.0:3000
-[2024-06-08 18:18:34] [INFO] - Serving on http://[::]:3000

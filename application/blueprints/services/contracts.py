@@ -211,11 +211,12 @@ class ContractsService:
                   self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
                   continue
 
-              contractValues = contractRequest['formFields']
+              contractValues = contractRequest.get('formFields', {})
               
               isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
               
               if not isContractCompletelyFilledToProcess:
+                  logger.info('runTryAgain | Contract not completely filled to process: ' + str(requestId))
                   continue
               
               try:
