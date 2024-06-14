@@ -210,9 +210,8 @@ class ContractsService:
               if not contractRequest:
                   self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
                   continue
-              logger.info('runTryAgain | Contract request found: ' + str(contractRequest))
               
-              contractValues = contractRequest.get('formFields', {})
+              contractValues = contractRequest[0]['formFields']
               
               isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
               

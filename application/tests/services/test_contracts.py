@@ -282,7 +282,7 @@ def test_should_process_retry_contract(service, mocker):
           
     processedRequestRepository.getManyRetries = MagicMock(return_value=[retryDocument])
     zeevClient.generateZeevToken = MagicMock(return_value='token')
-    zeevClient.getContractRequestById = MagicMock(return_value=zeev_responses.grow_response[0])
+    zeevClient.getContractRequestById = MagicMock(return_value=zeev_responses.grow_response)
     
     clickSignClient.createEnvelope = MagicMock(return_value=1)
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
