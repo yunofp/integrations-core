@@ -21,7 +21,7 @@ class ContractsService:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
   def processContract(self, requestId, contractValues):
-    envelopeId = self.clickSignClient.createEnvelope()
+    envelopeId = self.clickSignClient.createEnvelope(requestId)
     workType = dataProcessing.findByName(contractValues, "qualSeraOContrato")
 
     if not workType or 'Não sei' in workType:

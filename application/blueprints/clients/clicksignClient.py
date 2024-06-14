@@ -15,7 +15,7 @@ class ClicksignClient:
         }
         self.clickSignBaseUrl= self.config['CLICKSIGN_BASE_URL']
     
-    def createEnvelope(self):
+    def createEnvelope(self, requestId):
         try:
             url = self.clickSignBaseUrl+"/envelopes/"
 
@@ -23,7 +23,7 @@ class ClicksignClient:
                 "data": {
                     "type": "envelopes",
                     "attributes": {
-                            "name": "Envelope Integracao ZEEV-CLICKSIGN",
+                            "name": "Envelope for request: " + requestId,
                             "locale": "pt-BR"
                     }
                 }
