@@ -23,7 +23,7 @@ class ClicksignClient:
                 "data": {
                     "type": "envelopes",
                     "attributes": {
-                            "name": "Envelope for request: " + requestId,
+                            "name": "Envelope for request: " + str(requestId),
                             "locale": "pt-BR"
                     }
                 }
