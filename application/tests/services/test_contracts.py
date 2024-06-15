@@ -33,7 +33,7 @@ def test_should_process_sucess_grow_contract(service, mocker):
     requestId = zeev_responses.grow_response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
@@ -53,7 +53,7 @@ def test_should_process_sucess_wealth_contract(service, mocker):
     requestId = zeev_responses.wealth_response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.wealth_response)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
@@ -76,7 +76,7 @@ def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
   
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response_wealth_response)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 2}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
@@ -98,7 +98,7 @@ def test_should_process_many_contract(service, mocker):
     manyContractsReponse = list(zeev_responses.grow_response) + list(zeev_responses.wealth_response) + list(zeev_responses.grow_response_not_filled)
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=manyContractsReponse)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
@@ -117,7 +117,7 @@ def test_should_save_failed_grow_contract_request(service, mocker):
     requestId = zeev_responses.grow_response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
@@ -145,7 +145,7 @@ def test_retry_grow_contract_save_on_incomplete_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response_not_filled)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
@@ -284,7 +284,7 @@ def test_should_process_retry_contract(service, mocker):
     zeevClient.generateZeevToken = MagicMock(return_value='token')
     zeevClient.getContractRequestById = MagicMock(return_value=zeev_responses.grow_response)
     
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.sendClickSignPostWealth = MagicMock(return_value={'data': {'id': 2}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
@@ -356,7 +356,7 @@ def test_should_save_invalid_work_type_contract_request(service, mocker):
     requestId = zeev_responses.grow_response[0]['id']
     zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.invalid_work_type_response)
     processedRequestRepository.findByRequestId = MagicMock(return_value=False)
-    clickSignClient.createEnvelope = MagicMock(return_value=1)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
     clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
     clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
