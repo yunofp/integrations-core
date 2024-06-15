@@ -132,3 +132,4 @@ class ZeevClient:
         except requests.exceptions.RequestException as e:
             logger.error("instanceIdRequest | Error during request:", exc_info=True)
             raise
+        

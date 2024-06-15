@@ -21,7 +21,9 @@ class ContractsService:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
   def processContract(self, requestId, contractValues):
-    envelopeId = self.clickSignClient.createEnvelope(requestId)
+    envelope = self.clickSignClient.createEnvelope(requestId)
+    envelopeId = envelope.get('data', {}).get('id')
+    logger.info("processContract | envelopeId:" + str(envelopeId))
     workType = dataProcessing.findByName(contractValues, "qualSeraOContrato")
 
     if not workType or 'Não sei' in workType:
@@ -55,7 +57,9 @@ class ContractsService:
       contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
      
       documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
-      documentIdWealth = self._processContractSteps(contractVariablesWealth, envelopeId, 'Wealth')
+      newEnvelope = self.clickSignClient.createEnvelope(str(requestId) + 'Wealth')
+      newEnvelopeId = newEnvelope.get('data', {}).get('id')
+      documentIdWealth = self._processContractSteps(contractVariablesWealth, newEnvelopeId, 'Wealth')
       
       documents.extend([{'type': 'Grow', 'id': documentIdGrow}, {'type': 'Wealth', 'id': documentIdWealth}])
       
@@ -114,7 +118,7 @@ class ContractsService:
       qualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
 
       qualificationRequirementsId = qualificationRequirementsResponse.get('data', {}).get('id')
-      
+      print('aquiiiii', qualificationRequirementsId)
       if not qualificationRequirementsId:
         logger.error("processContract | data:", " envelopeId: ", envelopeId, " signerId: ", signerId," documentId: ", documentId )
         raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  
@@ -145,7 +149,7 @@ class ContractsService:
           'createdAt': datetime.now(timezone.utc)
       })
     except Exception as e:
-      logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + requestId, exc_info=True)
+      logger.error("_insertSuccessfullyProcessedRequest | Error inserting successfully processed request:" + str(requestId), exc_info=True)
   
   def _updateSuccessfullyProcessedRequest(self, requestId, serviceType, documentsData):
     try:

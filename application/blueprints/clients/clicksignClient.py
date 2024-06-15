@@ -16,30 +16,21 @@ class ClicksignClient:
         self.clickSignBaseUrl= self.config['CLICKSIGN_BASE_URL']
     
     def createEnvelope(self, requestId):
-        try:
-            url = self.clickSignBaseUrl+"/envelopes/"
+    
+        url = self.clickSignBaseUrl+"/envelopes/"
 
-            data = {
-                "data": {
-                    "type": "envelopes",
-                    "attributes": {
-                            "name": "Envelope for request: " + str(requestId),
-                            "locale": "pt-BR"
-                    }
+        data = {
+            "data": {
+                "type": "envelopes",
+                "attributes": {
+                        "name": "Envelope for request: " + str(requestId),
+                        "locale": "pt-BR"
                 }
             }
+        }
 
-            response = requests.post(url, json=data, headers=self.headers)
-            
-            if response.status_code == 201:
-                json_response = response.text.replace("'", '"')
-                envelopeResponse = json.loads(json_response)
-                return envelopeResponse.get("data").get("id")
-            else:
-                response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("createEnvelope: Error while creating envelope: " + str(e))
-            raise
+        response = requests.post(url, json=data, headers=self.headers)
+        return response.json()
 
     def sendClickSignPostGrow(self, dataVariables, envelopeId, filename):
             url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/documents"
