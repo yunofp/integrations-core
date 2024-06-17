@@ -78,7 +78,7 @@ class ContractsService:
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
       phoneNum = self._definePhoneNumber(contractVariables)
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
-      filename = formatting.formatFilename(contractType, contractVariables)
+      filename = formatting.formatFileName(contractType, contractVariables)
       documentId = None
    
       if contractType == 'Grow':
@@ -103,8 +103,7 @@ class ContractsService:
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(workResponse))
         
-   
-      cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
+      cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
       email = contractVariables.get("email")
       birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
       
@@ -118,7 +117,7 @@ class ContractsService:
       qualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
 
       qualificationRequirementsId = qualificationRequirementsResponse.get('data', {}).get('id')
-      print('aquiiiii', qualificationRequirementsId)
+    
       if not qualificationRequirementsId:
         logger.error("processContract | data:", " envelopeId: ", envelopeId, " signerId: ", signerId," documentId: ", documentId )
         raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  

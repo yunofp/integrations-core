@@ -25,13 +25,13 @@ def clearPhoneNum(string):
         string = string.replace(caractere, '')
     return string
 
-def formatFilename(serviceType, contractValues):
+def formatFileName(serviceType, contractValues):
     clientName = ''
     if serviceType == 'Grow' or serviceType == 'Wealth' or serviceType == 'Wealth & Grow':
         clientName = contractValues.get("nomeCompletoDoTitular")
     if serviceType == 'Work': 
         clientName = contractValues.get("nomeDaEmpresa")   
-    filename =  datetime.now().strftime("%Y-%m-%d %H:%M:%S") + serviceType + " " + clientName + ".doc"
+    filename =  "Contrato" + " " + serviceType + " - " + clientName + ".docx"
     return filename
 
 

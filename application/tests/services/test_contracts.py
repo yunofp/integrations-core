@@ -6,6 +6,7 @@ from application.tests.populate import zeev_responses
 from application.blueprints.services.contracts import ContractsService
 from application.blueprints.repositories.processedRequestRepository import ProcessedRequestsRepository
 from application.blueprints.utils.dataProcessing import defineVariablesGrow, defineVariablesWealth, defineVariablesWork
+from application.blueprints.utils import formatting
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,45 @@ def test_should_process_sucess_grow_contract(service, mocker):
     spyInsert.assert_called_once_with(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
 
     assert spyInsert.call_args == call(requestId, 'Grow', [{ 'type': 'Grow', 'id': 1 }])
+    
+ 
+def test_should_return_correct_names_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    requestId = zeev_responses.grow_response[0]['id']
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+    
+    
+    formatFileNameSpy = mocker.spy(formatting, 'formatFileName')  
+     
+    contractService.processAllContracts()
+    assert formatFileNameSpy.spy_return =='Contrato Grow - Strokes INC..docx'  
+    
+def test_should_return_correct_name_work_contract(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    requestId = zeev_responses.grow_response[0]['id']
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.work_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(return_value={})
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+    
+    
+    formatFileNameSpy = mocker.spy(formatting, 'formatFileName')  
+     
+    contractService.processAllContracts()
+    assert formatFileNameSpy.spy_return =='Contrato Work - Nikolai Fraiture.docx'  
 def test_should_process_sucess_wealth_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.wealth_response[0]['id']
