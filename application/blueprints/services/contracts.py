@@ -1,7 +1,7 @@
 
 import logging
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from ..utils import formatting, dataProcessing
 from flask import current_app as app
 logger = logging.getLogger(__name__)
@@ -11,6 +11,7 @@ class ContractsService:
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
     self.config = app.config
+
     
   
   def listManyRetries(self):
@@ -134,11 +135,14 @@ class ContractsService:
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
       
       
-      jvgName = self.config.get('JVG_NAME')
-      jvgCnpj = self.config.get('JVG_CNPJ')
-      jvgEmail = self.config.get('JVG_EMAIL')
+      jgvName = self.config.get('JGV_NAME')
+      jgvCnpj = self.config.get('JGV_CNPJ')
+      jgvEmail = self.config.get('JGV_EMAIL')
+      jgvPhone = self.config.get('JGV_PHONE')
+        
+      print(jgvName, jgvCnpj, jgvEmail)
       
-      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jvgName, jvgCnpj, None, None, jvgEmail)
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail)
       
       jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
       
@@ -262,26 +266,35 @@ class ContractsService:
       except Exception as e:
           logger.error("runTryAgain | Error running try again: " + str(e), exc_info=True)
 
-  
-  def processAllContracts(self):
+  def _getIntervalsDate(self):
+    now = datetime(2024, 6, 16) # tirar isso aquiiiiii
+    intervalDays = self.config.get('CONTRACTS_PROCESSING_DAYS_INTERVAL')
+    
+    if not intervalDays:
+      raise Exception("CONTRACTS_PROCESSING_DAYS_INTERVAL not defined")
+    
+    end = now + timedelta(days=intervalDays)
+    formattedStartDate = now.strftime("%Y-%m-%d")
+    formattedEndDate = end.strftime("%Y-%m-%d")
+    return formattedStartDate, formattedEndDate
+  def processAllContracts(self): 
     logger.info("processAllContracts | starting to process all contracts")
     contractsRequests = []
+    
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      specific_date = datetime(2024, 6, 17)  # Ano, mês, dia
-      # formattedDate = specific_date.strftime("%Y-%m-%d")
-      # now = datetime.now()
-      now = specific_date
-      formattedDate = now.strftime("%Y-%m-%d")
-      contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
+      formattedStartDate, formattedEndDate = self._getIntervalsDate()
+      print(formattedStartDate, formattedEndDate)
+      contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedStartDate, formattedEndDate)
+      
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
-    
+    print(contractsRequests)
     if not contractsRequests:
       logger.info("processAllContracts | No contracts found to process")
       return
     
-    logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
+    logger.info("processAllContracts | starting to process contracts founds in date: " + formattedStartDate)
     
     for contractRequest in contractsRequests:
 

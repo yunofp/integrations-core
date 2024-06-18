@@ -175,7 +175,6 @@ class ClicksignClient:
         
         attributes = {
             "name": name,
-            "has_documentation": True,
             "refusable": True,
             "communicate_events": {
                 "document_signed": "whatsapp",
@@ -186,6 +185,10 @@ class ClicksignClient:
         
         if cpf:
             attributes["documentation"] = cpf
+            attributes["has_documentation"] = True
+        else: 
+            attributes["has_documentation"] = False
+            
         if birthdate:
             attributes["birthday"] = birthdate
         if email:
