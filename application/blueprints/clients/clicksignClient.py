@@ -170,32 +170,40 @@ class ClicksignClient:
 
             response = requests.post(url, json=data, headers=self.headers)
             return response.json()
-    def addSignerToEnvelope(self, envelopeId, dataVariables, cpf, birthdate, phoneNum, email):
-            url = self.clickSignBaseUrl+ "/envelopes/" + envelopeId + "/signers"
-            name = dataVariables.get("nomeCompletoDoTitular")
-            data = {
-                    "data":{
-                    "type":"signers",
-                    "attributes":{
-                        "name":name,
-                        "birthday":birthdate,
-                        "email":email,
-                        "phone_number":phoneNum,
-                        "has_documentation":True,
-                        "documentation":cpf,
-                        "refusable":True,  
-                        "communicate_events":{
-                            "document_signed":"whatsapp",
-                            "signature_request":"whatsapp",
-                            "signature_reminder":"email"
-                        }
-                    }
-                }
+    def addSignerToEnvelope(self, envelopeId, name, cpf=None, birthdate=None, phoneNum=None, email=None):
+        url = self.clickSignBaseUrl + "/envelopes/" + envelopeId + "/signers"
+        
+        attributes = {
+            "name": name,
+            "has_documentation": True,
+            "refusable": True,
+            "communicate_events": {
+                "document_signed": "whatsapp",
+                "signature_request": "whatsapp",
+                "signature_reminder": "email"
             }
+        }
+        
+        if cpf:
+            attributes["documentation"] = cpf
+        if birthdate:
+            attributes["birthday"] = birthdate
+        if email:
+            attributes["email"] = email
+        if phoneNum:
+            attributes["phone_number"] = phoneNum
+        
+        data = {
+            "data": {
+                "type": "signers",
+                "attributes": attributes
+            }
+        }
 
-            response = requests.post(url, json=data, headers=self.headers)
-    
-            return response.json()
+        response = requests.post(url, json=data, headers=self.headers)
+
+        return response.json()
+
 
   
     def addQualificationRequirements(self, envelopeId, signerId, documentId):

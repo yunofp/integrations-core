@@ -103,16 +103,25 @@ class ContractsService:
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(workResponse))
         
-      cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
-      email = contractVariables.get("email")
-      birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
+    
+      self._addSignersRequirements(envelopeId, contractVariables, phoneNum, documentId)
+      self.clickSignClient.activateEnvelope(envelopeId)
+      self.clickSignClient.notificateEnvelope(envelopeId)
+      return documentId
+    
+  def _addSignersRequirements(self, envelopeId, contractVariables, phoneNum, documentId):
+      clientName = contractVariables.get("nomeCompletoDoTitular")
+      clientCpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
+      clientEmail = contractVariables.get("email")
+      clientBirthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
       
-      response =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
       
-      signerId = response.get('data', {}).get('id')
+      clientSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, clientName, clientCpf, clientBirthdate, phoneNum, clientEmail)
+
+      signerId = clientSignerResponse.get('data', {}).get('id')
       
       if not signerId:
-        raise Exception("processContract | Error while creating signer:" + str(response))
+        raise Exception("processContract | Error while creating signer:" + str(clientSignerResponse))
      
       qualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
 
@@ -121,11 +130,30 @@ class ContractsService:
       if not qualificationRequirementsId:
         logger.error("processContract | data:", " envelopeId: ", envelopeId, " signerId: ", signerId," documentId: ", documentId )
         raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  
-    
+      
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
-      self.clickSignClient.activateEnvelope(envelopeId)
-      self.clickSignClient.notificateEnvelope(envelopeId)
-      return documentId
+      
+      
+      jvgName = self.config.get('JVG_NAME')
+      jvgCnpj = self.config.get('JVG_CNPJ')
+      jvgEmail = self.config.get('JVG_EMAIL')
+      
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jvgName, jvgCnpj, None, None, jvgEmail)
+      
+      jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
+      
+      if not jgvSignerId:
+        raise Exception("processContract | Error while creating jgv signer:" + str(jgvSignerResponse))
+      
+      jgvQualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, jgvSignerId, documentId)
+      
+      jgvQualificationRequirementsId = jgvQualificationRequirementsResponse.get('data', {}).get('id')
+      
+      if not jgvQualificationRequirementsId:
+        raise Exception("processContract | Error while creating jgv qualification requirements:" + str(jgvQualificationRequirementsId))
+      
+      self.clickSignClient.addAuthRequirements(envelopeId, jgvSignerId, documentId)
+          
 
   def _isNewClientYuno(phrase):
     expectedPhrase = "new client yuno v. 1"
@@ -240,7 +268,10 @@ class ContractsService:
     contractsRequests = []
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      now = datetime.now()
+      specific_date = datetime(2024, 6, 17)  # Ano, mês, dia
+      # formattedDate = specific_date.strftime("%Y-%m-%d")
+      # now = datetime.now()
+      now = specific_date
       formattedDate = now.strftime("%Y-%m-%d")
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
     except requests.exceptions.RequestException as e:
