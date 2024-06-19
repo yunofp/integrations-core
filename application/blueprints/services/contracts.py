@@ -75,6 +75,7 @@ class ContractsService:
       phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
     return phoneNum
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
+    try:
       phoneNum = self._definePhoneNumber(contractVariables)
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFileName(contractType, contractVariables)
@@ -107,6 +108,10 @@ class ContractsService:
       self.clickSignClient.activateEnvelope(envelopeId)
       self.clickSignClient.notificateEnvelope(envelopeId)
       return documentId
+    except Exception as e:
+        logger.error(f"_processContractSteps | Error: {str(e)}")
+        raise e
+    
     
   def _addSignersRequirements(self, envelopeId, contractVariables, phoneNum, documentId):
       clientName = contractVariables.get("nomeCompletoDoTitular")

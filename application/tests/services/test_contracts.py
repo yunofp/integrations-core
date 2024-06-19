@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 def app():
     app = Flask(__name__)
     app.config['PHONE_NUMBER_DEBUG'] = '123456789'
+    app.config['CONTRACTS_PROCESSING_DAYS_INTERVAL'] = 5
     return app
 
 @pytest.fixture
@@ -68,7 +69,7 @@ def test_should_return_correct_names_contract(service, mocker):
     formatFileNameSpy = mocker.spy(formatting, 'formatFileName')  
      
     contractService.processAllContracts()
-    assert formatFileNameSpy.spy_return =='Contrato Grow - Strokes INC..docx'  
+    assert formatFileNameSpy.spy_return =='[Integração] Contrato Grow - Strokes INC..docx'  
     
 def test_should_return_correct_name_work_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
@@ -87,7 +88,7 @@ def test_should_return_correct_name_work_contract(service, mocker):
     formatFileNameSpy = mocker.spy(formatting, 'formatFileName')  
      
     contractService.processAllContracts()
-    assert formatFileNameSpy.spy_return =='Contrato Work - Nikolai Fraiture.docx'  
+    assert formatFileNameSpy.spy_return =='[Integração] Contrato Work - Nikolai Fraiture.docx'  
 def test_should_process_sucess_wealth_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.wealth_response[0]['id']
@@ -390,7 +391,6 @@ def test_should_not_process_retry_when_contract_is_not_fully_filled(service, moc
     assert spyRepository.call_count == 0
     assert spyUpdateFailed.call_count == 0
 
-    
 def test_should_save_invalid_work_type_contract_request(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
     requestId = zeev_responses.grow_response[0]['id']
@@ -419,3 +419,22 @@ def test_should_save_invalid_work_type_contract_request(service, mocker):
     assert expectedSaveRequest.get('status') == {'name': 'error', 'description': 'processContract | Invalid work type:1150'}
     spyInsert.assert_called_once_with(requestId, True, 'processContract | Invalid work type:1150', 'error', True)
     assert spyInsert.call_args == call(requestId, True, 'processContract | Invalid work type:1150', 'error', True) 
+
+def test_should_not_notificate_when_occurs_error_on_integrations_api(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addSignerToEnvelope = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addQualificationRequirements = MagicMock(return_value={'data': {'id': 1}})
+    clickSignClient.addAuthRequirements = MagicMock(side_effect=Exception("Auth requirement error"))
+    clickSignClient.activateEnvelope = MagicMock(return_value={})
+    clickSignClient.notificateEnvelope = MagicMock(return_value={})
+        
+    spyNotificate = mocker.spy(clickSignClient, 'notificateEnvelope')  
+    spyInsertFailed = mocker.spy(contractService, '_insertFailedProcessedRequest')
+    contractService.processAllContracts()
+    assert spyNotificate.call_count == 0
+    assert spyInsertFailed.call_count == 1
+    assert spyInsertFailed.call_args == call(1150, True, 'Auth requirement error', 'error', True)
