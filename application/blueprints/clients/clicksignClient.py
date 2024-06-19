@@ -170,7 +170,7 @@ class ClicksignClient:
 
             response = requests.post(url, json=data, headers=self.headers)
             return response.json()
-    def addSignerToEnvelope(self, envelopeId, name, cpf=None, birthdate=None, phoneNum=None, email=None):
+    def addSignerToEnvelope(self, envelopeId, name, cpf=None, birthdate=None, phoneNum=None, email=None, signatureRequest="whatsapp"):
         url = self.clickSignBaseUrl + "/envelopes/" + envelopeId + "/signers"
         
         attributes = {
@@ -178,7 +178,7 @@ class ClicksignClient:
             "refusable": True,
             "communicate_events": {
                 "document_signed": "whatsapp",
-                "signature_request": "whatsapp",
+                "signature_request": signatureRequest,
                 "signature_reminder": "email"
             }
         }

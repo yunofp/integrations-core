@@ -12,8 +12,6 @@ class ContractsService:
     self.clickSignClient = clickSignClient
     self.config = app.config
 
-    
-  
   def listManyRetries(self):
     try:
       result = self.processedRequestRepository.getManyRetries()
@@ -134,15 +132,11 @@ class ContractsService:
       
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
       
-      
       jgvName = self.config.get('JGV_NAME')
-      jgvCnpj = self.config.get('JGV_CNPJ')
       jgvEmail = self.config.get('JGV_EMAIL')
       jgvPhone = self.config.get('JGV_PHONE')
-        
-      print(jgvName, jgvCnpj, jgvEmail)
       
-      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail)
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email')
       
       jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
       
