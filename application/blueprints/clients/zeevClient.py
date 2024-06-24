@@ -94,14 +94,14 @@ class ZeevClient:
             "numeroDoContratoPai", "cPF", "telefone", "observacao", "qualSeraOContrato"
         ]
       
-    def getContractsRequestsByDate(self, token, formattedDate):
+    def getContractsRequestsByDate(self, token, formattedDateStart, formattedDateEnd):
             headers = self._getHeaders(token)
             zeevNewClientFlowId = self.config['ZEEV_NEW_CLIENT_FLOW_ID']
     
             data = {
                 "flowId": zeevNewClientFlowId,
-                "StartDateIntervalBegin": formattedDate,
-                "StartDateIntervalEnd": formattedDate,
+                "StartDateIntervalBegin": formattedDateStart,
+                "StartDateIntervalEnd": formattedDateEnd,
                 "recordsPerPage": 100,
                 "formFieldNames": self._FormFieldNames()
             }

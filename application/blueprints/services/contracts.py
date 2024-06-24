@@ -1,9 +1,10 @@
 
 import logging
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from ..utils import formatting, dataProcessing
 from flask import current_app as app
+import pytz 
 logger = logging.getLogger(__name__)
 class ContractsService:
   def __init__(self, zeevClient, processedRequestRepository, clickSignClient):
@@ -11,8 +12,7 @@ class ContractsService:
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
     self.config = app.config
-    
-  
+
   def listManyRetries(self):
     try:
       result = self.processedRequestRepository.getManyRetries()
@@ -76,9 +76,10 @@ class ContractsService:
       phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
     return phoneNum
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
+    try:
       phoneNum = self._definePhoneNumber(contractVariables)
       logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
-      filename = formatting.formatFilename(contractType, contractVariables)
+      filename = formatting.formatFileName(contractType, contractVariables)
       documentId = None
    
       if contractType == 'Grow':
@@ -103,30 +104,60 @@ class ContractsService:
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(workResponse))
         
-   
-      cpf = formatting.formatCpf(contractVariables.get("cpfDoTitular"))
-      email = contractVariables.get("email")
-      birthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
+    
+      self._addSignersRequirements(envelopeId, contractVariables, phoneNum, documentId)
+      self.clickSignClient.activateEnvelope(envelopeId)
+      self.clickSignClient.notificateEnvelope(envelopeId)
+      return documentId
+    except Exception as e:
+        logger.error(f"_processContractSteps | Error: {str(e)}")
+        raise e
+    
+    
+  def _addSignersRequirements(self, envelopeId, contractVariables, phoneNum, documentId):
+      clientName = contractVariables.get("nomeCompletoDoTitular")
+      clientCpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
+      clientEmail = contractVariables.get("email")
+      clientBirthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
       
-      response =  self.clickSignClient.addSignerToEnvelope(envelopeId, contractVariables, cpf, birthdate, phoneNum, email)
       
-      signerId = response.get('data', {}).get('id')
+      clientSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, clientName, clientCpf, clientBirthdate, phoneNum, clientEmail)
+
+      signerId = clientSignerResponse.get('data', {}).get('id')
       
       if not signerId:
-        raise Exception("processContract | Error while creating signer:" + str(response))
+        raise Exception("processContract | Error while creating signer:" + str(clientSignerResponse))
      
       qualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, signerId, documentId)
 
       qualificationRequirementsId = qualificationRequirementsResponse.get('data', {}).get('id')
-      print('aquiiiii', qualificationRequirementsId)
+    
       if not qualificationRequirementsId:
         logger.error("processContract | data:", " envelopeId: ", envelopeId, " signerId: ", signerId," documentId: ", documentId )
         raise Exception("processContract | Error while creating qualification requirements:" + str(qualificationRequirementsResponse))  
-    
+      
       self.clickSignClient.addAuthRequirements(envelopeId, signerId, documentId)
-      self.clickSignClient.activateEnvelope(envelopeId)
-      self.clickSignClient.notificateEnvelope(envelopeId)
-      return documentId
+      
+      jgvName = self.config.get('JGV_NAME')
+      jgvEmail = self.config.get('JGV_EMAIL')
+      jgvPhone = self.config.get('JGV_PHONE')
+      
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email')
+      
+      jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
+      
+      if not jgvSignerId:
+        raise Exception("processContract | Error while creating jgv signer:" + str(jgvSignerResponse))
+      
+      jgvQualificationRequirementsResponse = self.clickSignClient.addQualificationRequirements(envelopeId, jgvSignerId, documentId)
+      
+      jgvQualificationRequirementsId = jgvQualificationRequirementsResponse.get('data', {}).get('id')
+      
+      if not jgvQualificationRequirementsId:
+        raise Exception("processContract | Error while creating jgv qualification requirements:" + str(jgvQualificationRequirementsId))
+      
+      self.clickSignClient.addAuthRequirements(envelopeId, jgvSignerId, documentId)
+          
 
   def _isNewClientYuno(phrase):
     expectedPhrase = "new client yuno v. 1"
@@ -235,23 +266,36 @@ class ContractsService:
       except Exception as e:
           logger.error("runTryAgain | Error running try again: " + str(e), exc_info=True)
 
-  
-  def processAllContracts(self):
+  def _getIntervalsDate(self):
+    now = datetime.now(pytz.timezone('America/Sao_Paulo'))
+    intervalDays = self.config.get('CONTRACTS_PROCESSING_DAYS_INTERVAL')
+    
+    if not intervalDays:
+      raise Exception("CONTRACTS_PROCESSING_DAYS_INTERVAL not defined")
+    
+    end = now + timedelta(days=intervalDays)
+    formattedStartDate = now.strftime("%Y-%m-%d")
+    formattedEndDate = end.strftime("%Y-%m-%d")
+    logger.info("getIntervalsDate | startDate: " + formattedStartDate + " | endDate: " + formattedEndDate)
+    return formattedStartDate, formattedEndDate
+  def processAllContracts(self): 
     logger.info("processAllContracts | starting to process all contracts")
     contractsRequests = []
+    
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
-      now = datetime.now()
-      formattedDate = now.strftime("%Y-%m-%d")
-      contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedDate)
+      formattedStartDate, formattedEndDate = self._getIntervalsDate()
+  
+      contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedStartDate, formattedEndDate)
+      
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
-    
+    print(contractsRequests)
     if not contractsRequests:
       logger.info("processAllContracts | No contracts found to process")
       return
     
-    logger.info("processAllContracts | starting to process contracts founds in date: " + formattedDate)
+    logger.info("processAllContracts | starting to process contracts founds in date: " + formattedStartDate)
     
     for contractRequest in contractsRequests:
 

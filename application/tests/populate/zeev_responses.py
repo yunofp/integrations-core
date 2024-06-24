@@ -1614,7 +1614,7 @@ work_response = [
 			{
 				"id": 158858,
 				"name": "qualSeraOContrato",
-				"value": "c) Wealth",
+				"value": "a) Work",
 				"row": 1
 			},
 			{
