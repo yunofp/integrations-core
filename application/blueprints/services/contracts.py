@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 from ..utils import formatting, dataProcessing
 from flask import current_app as app
+import pytz 
 logger = logging.getLogger(__name__)
 class ContractsService:
   def __init__(self, zeevClient, processedRequestRepository, clickSignClient):
@@ -266,7 +267,7 @@ class ContractsService:
           logger.error("runTryAgain | Error running try again: " + str(e), exc_info=True)
 
   def _getIntervalsDate(self):
-    now = datetime(2024, 6, 16) # tirar isso aquiiiiii
+    now = datetime.now(pytz.timezone('America/Sao_Paulo'))
     intervalDays = self.config.get('CONTRACTS_PROCESSING_DAYS_INTERVAL')
     
     if not intervalDays:
