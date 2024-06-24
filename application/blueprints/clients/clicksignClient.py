@@ -178,8 +178,7 @@ class ClicksignClient:
             "refusable": True,
             "communicate_events": {
                 "document_signed": "whatsapp",
-                "signature_request": signatureRequest,
-                "signature_reminder": "email"
+                "signature_request": signatureRequest
             }
         }
         
@@ -279,7 +278,6 @@ class ClicksignClient:
                     "name": "Integraçao Zeev Clicksign",
                     "locale": "pt-BR",
                     "auto_close": True,
-                    "remind_interval": 7,
                     "block_after_refusal": True,
                     }
                 }
