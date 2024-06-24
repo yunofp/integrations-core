@@ -2,6 +2,13 @@ FROM --platform=linux/amd64 python:3.9
 
 WORKDIR /api-flask
 
+ENV TZ=America/Sao_Paulo
+
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
+
 COPY .env /api-flask/
 COPY pytest.ini /api-flask/
 COPY requirements.txt /api-flask/
