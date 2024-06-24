@@ -276,6 +276,7 @@ class ContractsService:
     end = now + timedelta(days=intervalDays)
     formattedStartDate = now.strftime("%Y-%m-%d")
     formattedEndDate = end.strftime("%Y-%m-%d")
+    logger.info("getIntervalsDate | startDate: " + formattedStartDate + " | endDate: " + formattedEndDate)
     return formattedStartDate, formattedEndDate
   def processAllContracts(self): 
     logger.info("processAllContracts | starting to process all contracts")
@@ -284,7 +285,7 @@ class ContractsService:
     try: 
       zeevToken = self.zeevClient.generateZeevToken()
       formattedStartDate, formattedEndDate = self._getIntervalsDate()
-      print(formattedStartDate, formattedEndDate)
+  
       contractsRequests = self.zeevClient.getContractsRequestsByDate(zeevToken, formattedStartDate, formattedEndDate)
       
     except requests.exceptions.RequestException as e:
