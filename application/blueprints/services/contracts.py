@@ -142,7 +142,7 @@ class ContractsService:
       jgvEmail = self.config.get('JGV_EMAIL')
       jgvPhone = self.config.get('JGV_PHONE')
       
-      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email')
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email', 'email')
       
       jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
       
