@@ -185,8 +185,6 @@ class ClicksignClient:
       
         attributes["has_documentation"] = False
             
-        if birthdate:
-            attributes["birthday"] = birthdate
         if email:
             attributes["email"] = email
         if phoneNum:
