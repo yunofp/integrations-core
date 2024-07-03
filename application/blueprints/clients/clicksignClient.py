@@ -182,11 +182,8 @@ class ClicksignClient:
             }
         }
         
-        if cpf:
-            attributes["documentation"] = cpf
-            attributes["has_documentation"] = True
-        else: 
-            attributes["has_documentation"] = False
+      
+        attributes["has_documentation"] = False
             
         if birthdate:
             attributes["birthday"] = birthdate

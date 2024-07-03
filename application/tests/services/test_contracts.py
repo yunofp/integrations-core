@@ -442,3 +442,20 @@ def test_should_not_notificate_when_occurs_error_on_integrations_api(service, mo
     assert spyNotificate.call_count == 0
     assert spyInsertFailed.call_count == 1
     assert spyInsertFailed.call_args == call(1150, True, 'Auth requirement error', 'error', True)
+    
+    
+def test_should_validate_cpf_cnpj(service, mocker):
+    result = formatting.formatCpf('158.504.981-68')
+    assert result == '158.504.981-68'
+    
+    result = formatting.formatCpf('15850498168')
+    assert result == '158.504.981-68'
+    
+    result = formatting.formatCpf('15850498168')
+    assert result == '158.504.981-68'
+    
+    result = formatting.formatCpf('99092840149')
+    assert result == '990.928.401-49'
+    assert len(result) == 14
+    
+    
