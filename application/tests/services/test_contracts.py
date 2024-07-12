@@ -234,7 +234,7 @@ def test_should_get_correct_clicksign_variables_sucess_grow_contract():
     assert clicksignVariables.get('dataDoPagamentoDaImplantacao') == '08/05/2024'
     assert clicksignVariables.get('formaDePagamentoDaImplantacao') == 'PIX'
     assert clicksignVariables.get('fee') == '2,00'
-    assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
+    assert clicksignVariables.get('diaDaCobrançaDoFee') == '15'
     assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
     
 def test_should_get_correct_clicksign_variables_sucess_wealth_contract():
@@ -262,7 +262,7 @@ def test_should_get_correct_clicksign_variables_sucess_wealth_contract():
     assert clicksignVariables.get('dataDoPagamentoDaImplantacao') == '08/05/2024'
     assert clicksignVariables.get('formaDePagamentoDaImplantacao') == 'PIX'
     assert clicksignVariables.get('fee') == '2,00'
-    assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
+    assert clicksignVariables.get('diaDaCobrançaDoFee') == '15'
     assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
     assert clicksignVariables.get('cobrancaPelaCorretora') == 'Sim'
     assert clicksignVariables.get('patrimonioFinanceiroEstimado') == '3,00'
@@ -295,7 +295,7 @@ def test_should_get_correct_clicksign_variables_success_work_contract():
     assert clicksignVariables.get('dataDoPagamentoDaImplantacao') == '08/05/2024'
     assert clicksignVariables.get('formaDePagamentoDaImplantacao') == 'PIX'
     assert clicksignVariables.get('fee') == '2,00'
-    assert clicksignVariables.get('diaDeCobrançaDoFee') == '15'
+    assert clicksignVariables.get('diaDaCobrançaDoFee') == '15'
     assert clicksignVariables.get('observacoes') == 'OBSERVAÇAO'
 
 def test_should_not_process_saved_request(service, mocker):
