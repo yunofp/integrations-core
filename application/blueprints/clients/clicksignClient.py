@@ -42,32 +42,7 @@ class ClicksignClient:
                     "filename":str(filename),
                     "template":{
                         "key":"CED357E0-5BC9-4D11-9EA1-17D8CB700950",
-                        "data":{
-                            "Nome Completo do Titular":dataVariables.get("nomeCompletoDoTitular"),
-                            "Email":dataVariables.get("email"),
-                            "Data de Nascimento":dataVariables.get("dataDeNascimento"),
-                            "Telefone do Titular":dataVariables.get("telefoneDoTitular"),
-                            "CPF do Titular":dataVariables.get("cpfDoTitular"),
-                            "Endereço":dataVariables.get("endereco"),
-                            "Bairro":dataVariables.get("bairro"),
-                            "Cidade":dataVariables.get("cidade"),
-                            "UF":dataVariables.get("uf"),
-                            "CEP":dataVariables.get("cep"),
-                            "Nome Completo do Cônjuge":dataVariables.get("nomeCompletoDoConjuge"),
-                            "Email do Cônjuge":dataVariables.get("emailDoConjuge"),
-                            "Data de Nascimento do Cônjuge":dataVariables.get("dataDeNascimentoDoConjuge"),
-                            "Telefone do Cônjuge":dataVariables.get("telefoneDoConjuge"),
-                            "Prazo de Vigência":dataVariables.get("prazoDeVigencia"),
-                            "Closer Responsável":dataVariables.get("closerResponsavel"),
-                            "Origem Interna":dataVariables.get("origemInterna"),
-                            "Origem Externa":dataVariables.get("origemExterna"),
-                            "Valor da Implantação":dataVariables.get("valorDaImplantacao"),
-                            "Data do Pagamento da Implantação":dataVariables.get("dataDoPagamentoDaImplantacao"),
-                            "Forma de Pagamento da Implantação":dataVariables.get("formaDePagamentoDaImplantacao"),
-                            "Fee":dataVariables.get("fee"),
-                            "Dia da Cobrança do Fee":dataVariables.get("diaDeCobrancaDoFee"),
-                            "Observações":dataVariables.get("observacoes")          
-                            }
+                        "data": dataVariables
                         }
                     }
                 }
@@ -87,37 +62,7 @@ class ClicksignClient:
                     "filename":str(filename),
                     "template":{
                         "key":"3204EFD1-12CB-4F41-9263-B38EABD14947",
-                        "data":{
-                            "Nome Completo do Titular":dataVariables.get("nomeCompletoDoTitular"),
-                            "Email":dataVariables.get("email"),
-                            "Data de Nascimento":dataVariables.get("dataDeNascimento"),
-                            "Telefone do Titular":dataVariables.get("telefoneDoTitular"),
-                            "CPF do Titular":dataVariables.get("cpfDoTitular"),
-                            "Endereço":dataVariables.get("endereco"),
-                            "Bairro":dataVariables.get("bairro"),
-                            "Cidade":dataVariables.get("cidade"),
-                            "UF":dataVariables.get("uf"),
-                            "CEP":dataVariables.get("cep"),
-                            "Nome Completo do Cônjuge":dataVariables.get("nomeCompletoDoConjuge"),
-                            "Email do Cônjuge":dataVariables.get("emailDoConjuge"),
-                            "Data de Nascimento do Cônjuge":dataVariables.get("dataDeNascimentoDoConjuge"),
-                            "Telefone do Cônjuge":dataVariables.get("telefoneDoConjuge"),
-                            "Prazo de Vigência":dataVariables.get("prazoDeVigencia"),
-                            "Closer Responsável":dataVariables.get("closerResponsavel"),
-                            "Origem Interna":dataVariables.get("origemInterna"),
-                            "Origem Externa":dataVariables.get("origemExterna"),
-                            "Valor da Implantação":dataVariables.get("valorDaImplantacao"),
-                            "Data do Pagamento da Implantação":dataVariables.get("dataDoPagamentoDaImplantacao"),
-                            "Forma de Pagamento da Implantação":dataVariables.get("formaDePagamentoDaImplantacao"),
-                            "Fee":dataVariables.get("fee"),
-                            "Dia da Cobrança do Fee":dataVariables.get("diaDeCobrancaDoFee"),
-                            "Observações":dataVariables.get("observacoes"),
-                            "Cobrança pela Corretora":dataVariables.get("cobrancaPelaCorretora"),
-                            "Patrimônio Financeiro Estimado":dataVariables.get("patrimonioFinanceiroEstimado"),
-                            "Patrimônio Financeiro Estimado":dataVariables.get("patrimonioFinanceiroEstimado"),
-                            "Vincular à contrato pai?":dataVariables.get("vincularAContratoPai"),
-                            "Número do Contrato Pai":dataVariables.get("numeroDoContratoPai")
-                            }
+                        "data": dataVariables
                         }
                     }
                 }
@@ -136,33 +81,7 @@ class ClicksignClient:
                     "filename":str(filename),
                     "template":{
                         "key":"C200914F-3546-4512-8BF2-31DE1D99CA70",
-                        "data":{
-                            "Nome da Empresa":dataVariables.get("nomeDaEmpresa"),
-                            "Email de Contato":dataVariables.get("emailDeContato"),
-                            "Telefone da Empresa":dataVariables.get("telefoneDaEmpresa"),
-                            "CNPJ":dataVariables.get("cnpj"),
-                            "Endereço":dataVariables.get("endereco"),
-                            "Bairro":dataVariables.get("bairro"),
-                            "Cidade":dataVariables.get("cidade"),
-                            "UF":dataVariables.get("uf"),
-                            "CEP":dataVariables.get("cep"),
-                            "Nome Completo do Responsável":dataVariables.get("nomeCompletoDoResponsavel"),
-                            "Email do Responsável":dataVariables.get("emailDoResponsavel"),
-                            "Data de Nascimento do Responsável":dataVariables.get("dataDeNascimentoDoResponsavel"),
-                            "Telefone do Responsável":dataVariables.get("telefoneDoResponsável"),
-                            "Cargo do Responsável":dataVariables.get("cargoDoResponsável"),
-                            "CPF do Responsável":dataVariables.get("cpfDoResponsável"),
-                            "Prazo de Vigência":dataVariables.get("prazoDeVigencia"),
-                            "Closer Responsável":dataVariables.get("closerResponsavel"),
-                            "Origem Interna":dataVariables.get("origemInterna"),
-                            "Origem Externa":dataVariables.get("origemExterna"),
-                            "Valor da Implantação":dataVariables.get("valorDaImplantacao"),
-                            "Data do Pagamento da Implantação":dataVariables.get("dataDoPagamentoDaImplantacao"),
-                            "Forma de Pagamento da Implantação":dataVariables.get("formaDePagamentoDaImplantacao"),
-                            "Fee":dataVariables.get("fee"),
-                            "Dia da Cobrança do Fee":dataVariables.get("diaDeCobrancaDoFee"),
-                            "Observações":dataVariables.get("observacoes")
-                            }
+                        "data": dataVariables
                         }
                     }
                 }
