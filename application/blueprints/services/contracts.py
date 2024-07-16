@@ -127,9 +127,10 @@ class ContractsService:
     
   def _addSignersRequirements(self, envelopeId, contractVariables, phoneNum, documentId):
       clientName = contractVariables.get("nomeCompletoDoTitular")
-      clientCpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
-      clientEmail = contractVariables.get("email")
-      clientBirthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
+      clientCpf = formatting.formatCpf(contractVariables.get("CPF do Responsável") or contractVariables.get("cpfDoResponsavel"))
+      clientEmail = contractVariables.get("Email de Contato") or contractVariables.get("Email")
+  
+      clientBirthdate = formatting.formatBirthdate(contractVariables.get("Data de Nascimento do Responsável"))
       
       
       clientSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, clientName, clientCpf, clientBirthdate, phoneNum, clientEmail)
@@ -301,7 +302,7 @@ class ContractsService:
       
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
-    print(contractsRequests)
+
     if not contractsRequests:
       logger.info("processAllContracts | No contracts found to process")
       return

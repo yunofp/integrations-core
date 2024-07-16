@@ -12,6 +12,7 @@ def convert_to_utc_date(date_str):
     return date_utc
 
 def formatCpf(num):
+    if not num: return num
     if len(num) == 14:
         if '.' in num or '/' in num or '-' in num:
             return num
@@ -28,11 +29,13 @@ def clear_cpf(cpf):
     return ''.join(c for c in cpf if c.isdigit())
 
 def formatBirthdate(data):
+    if not data: return data
     dd, mm, aaaa = data.split('/')
     return f'{aaaa}-{mm}-{dd}'
 
 
 def clearPhoneNum(string):
+    if not string: return string
     toRemove = ['(', ')', '-']
     for caractere in toRemove:
         string = string.replace(caractere, '')
@@ -41,9 +44,9 @@ def clearPhoneNum(string):
 def formatFileName(serviceType, contractValues):
     clientName = ''
     if serviceType == 'Grow' or serviceType == 'Wealth' or serviceType == 'Wealth & Grow':
-        clientName = contractValues.get("nomeCompletoDoTitular")
+        clientName = contractValues.get("Nome Completo do Titular")
     if serviceType == 'Work': 
-        clientName = contractValues.get("nomeDaEmpresa")   
+        clientName = contractValues.get("Nome da Empresa")   
     filename =  "[Integração] Contrato" + " " + serviceType + " - " + clientName + ".docx"
     return filename
 
