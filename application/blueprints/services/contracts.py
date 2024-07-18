@@ -83,12 +83,12 @@ class ContractsService:
     if self.config.get('PHONE_NUMBER_DEBUG'):
       phoneNum = self.config.get('PHONE_NUMBER_DEBUG')
     else:
-      phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
+      phoneNum = formatting.clearPhoneNum(contractVariables.get("Telefone do Titular") or contractVariables.get("Telefone da Empresa"))
     return phoneNum
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
     try:
       phoneNum = self._definePhoneNumber(contractVariables)
-      logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
+      logger.info("_processContractSteps | sending contract to phoneNum:" + str(phoneNum))
       filename = formatting.formatFileName(contractType, contractVariables)
       documentId = None
    
