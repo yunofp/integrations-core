@@ -47,7 +47,7 @@ def formatFileName(serviceType, contractValues):
         clientName = contractValues.get("Nome Completo do Titular")
     if serviceType == 'Work': 
         clientName = contractValues.get("Nome da Empresa")   
-    filename =  "[Integração] Contrato" + " " + serviceType + " - " + clientName + ".docx"
+    filename =  "[Integração] Contrato" + " " + str(serviceType) + " - " + str(clientName) + ".docx"
     return filename
 
 
