@@ -256,7 +256,7 @@ class ContractsService:
               contractRequest = self.zeevClient.getContractRequestById(token, requestId)
               
               if not contractRequest:
-                  self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
+                  logger.warn('runTryAgain | Contract request not found: ' + str(requestId))
                   continue
               
               contractValues = contractRequest[0]['formFields']
