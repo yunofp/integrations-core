@@ -13,15 +13,15 @@ import time
 
 logger = logging.getLogger(__name__)
 class ContractsService:
-  def __init__(self, zeevClient, processedRequestRepository, clickSignClient, ProfileRepository, EntriesRepository, PaymentRepository, ContractRepository):
+  def __init__(self, zeevClient, processedRequestRepository, clickSignClient, profileRepository, extractRepository, paymentRepository, contractRepository):
     self.zeevClient = zeevClient
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
     self.config = app.config
-    self.ProfileRepository = ProfileRepository
-    self.EntriesRepository = EntriesRepository
-    self.PaymentRepository = PaymentRepository
-    self.ContractRepository = ContractRepository
+    self.profileRepository = profileRepository
+    self.extractRepository = extractRepository
+    self.paymentRepository = paymentRepository
+    self.contractRepository = contractRepository
 
   def listManyRetries(self):
     try:
@@ -38,7 +38,6 @@ class ContractsService:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
   def processContract(self, requestId, contractValues):
-
     envelope = self.clickSignClient.createEnvelope(requestId)
     envelopeId = envelope.get('data', {}).get('id')
     logger.info("processContract | envelopeId:" + str(envelopeId))
@@ -70,14 +69,15 @@ class ContractsService:
       documents.append({'type': 'Work', 'id': documentId})
       
     elif workTypeFormatted == "Grow & Wealth":
-      contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
       
-      implantationValue = '0,00'
-      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues, implantationValue)
+      contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
+      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
+     
       documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
       newEnvelope = self.clickSignClient.createEnvelope(str(requestId) + 'Wealth')
       newEnvelopeId = newEnvelope.get('data', {}).get('id')
       documentIdWealth = self._processContractSteps(contractVariablesWealth, newEnvelopeId, 'Wealth')
+      
       documents.extend([{'type': 'Grow', 'id': documentIdGrow}, {'type': 'Wealth', 'id': documentIdWealth}])
       
     else:
@@ -90,12 +90,12 @@ class ContractsService:
     if self.config.get('PHONE_NUMBER_DEBUG'):
       phoneNum = self.config.get('PHONE_NUMBER_DEBUG')
     else:
-      phoneNum = formatting.clearPhoneNum(contractVariables.get("Telefone do Titular") or contractVariables.get("Telefone da Empresa"))
+      phoneNum = formatting.clearPhoneNum(contractVariables.get("telefoneDoTitular"))
     return phoneNum
   def _processContractSteps(self, contractVariables, envelopeId, contractType):
     try:
       phoneNum = self._definePhoneNumber(contractVariables)
-      logger.info("_processContractSteps | sending contract to phoneNum:" + str(phoneNum))
+      logger.info("_processContractSteps | sending contract to phoneNum:" + phoneNum)
       filename = formatting.formatFileName(contractType, contractVariables)
       documentId = None
    
@@ -108,6 +108,7 @@ class ContractsService:
           raise Exception("processContract | Error while creating document:" + str(growResponse))
         
       elif contractType == 'Wealth':
+        
         wealthResponse = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
         documentId = wealthResponse.get('data', {}).get('id')
         
@@ -133,10 +134,9 @@ class ContractsService:
     
   def _addSignersRequirements(self, envelopeId, contractVariables, phoneNum, documentId):
       clientName = contractVariables.get("nomeCompletoDoTitular")
-      clientCpf = formatting.formatCpf(contractVariables.get("CPF do Responsável") or contractVariables.get("cpfDoResponsavel"))
-      clientEmail = contractVariables.get("Email de Contato") or contractVariables.get("Email")
-  
-      clientBirthdate = formatting.formatBirthdate(contractVariables.get("Data de Nascimento do Responsável"))
+      clientCpf = formatting.formatCpf(contractVariables.get("cpfDoTitular") or contractVariables.get("cpfDoResponsavel"))
+      clientEmail = contractVariables.get("email")
+      clientBirthdate = formatting.formatBirthdate(contractVariables.get("dataDeNascimento"))
       
       
       clientSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, clientName, clientCpf, clientBirthdate, phoneNum, clientEmail)
@@ -160,7 +160,7 @@ class ContractsService:
       jgvEmail = self.config.get('JGV_EMAIL')
       jgvPhone = self.config.get('JGV_PHONE')
       
-      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email', 'email')
+      jgvSignerResponse =  self.clickSignClient.addSignerToEnvelope(envelopeId, jgvName, None, None, jgvPhone, jgvEmail,'email')
       
       jgvSignerId = jgvSignerResponse.get('data', {}).get('id')
       
@@ -262,7 +262,7 @@ class ContractsService:
               contractRequest = self.zeevClient.getContractRequestById(token, requestId)
               
               if not contractRequest:
-                  logger.warn('runTryAgain | Contract request not found: ' + str(requestId))
+                  self._insertFailedProcessedRequest(requestId, True, 'Contract not found')
                   continue
               
               contractValues = contractRequest[0]['formFields']
@@ -308,7 +308,7 @@ class ContractsService:
       
     except requests.exceptions.RequestException as e:
       logger.error("processAllContracts | Error during getting contracts:" + str(e), exc_info=True)
-
+    print(contractsRequests)
     if not contractsRequests:
       logger.info("processAllContracts | No contracts found to process")
       return
@@ -343,7 +343,7 @@ class ContractsService:
         self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
         logger.error("processAllContracts | Error processing contract:" + str(requestId), exc_info=True)
 
-  def validate_csv_file(self, response):
+  def validate_csv_file(self, response): #OK
     if 'file' not in response.files:
         raise ValueError("No file part in the request")
     
@@ -359,31 +359,29 @@ class ContractsService:
         content = file.read().decode('utf-8')
         
         df = pd.read_csv(StringIO(content))
+        
+        # print(df.iloc[3]['Nome do Cliente'])
+        
         return content
     
     except Exception as e:
         raise ValueError(f"Error processing CSV file: {e}")
-    
-  def cod_already_exists(self, code):
-    if self.ContractRepository.find_by_code(code) is not None:
-      return True
-    
-    return False
 
-  def iterate_by_row(self, df, index, profile_dict, contract_dict, cod, session):
+  def horizontal_iteration_new(self, df, index, profile_dict, contract_dict, cod):
     for columns in range(47, len(df.columns), 7):
-        
-        print(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'), "  //  ", pandas_processement.get_cell_content(df, 0, columns))
+        # MMAAAA e MRR
+        print(df.iloc[index]['Nome do Cliente'], "  //  ", df.iloc[0, columns])
 
-        month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
+        month_year = formatting.get_mmaaaa(df.iloc[0, columns])
         payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
 
-        self.PaymentRepository.insert_one(payment_dict, session)
+        # INSERINDO O PAGAMENTO
+        self.paymentRepository.insert_payment_document(payment_dict)
 
-        payment_id = self.PaymentRepository.get_last_id()
-        contract_id = self.ContractRepository.get_last_id()
+        payment_id = self.paymentRepository.get_last_id()
+        contract_id = self.contractRepository.get_last_id()
 
-        entry_dict = pandas_processement.create_entry_dict(
+        extract_dict = pandas_processement.create_extract_dict(
             index, df, cod, month_year, payment_id, contract_id, 
             columns + 1, 
             columns, 
@@ -394,7 +392,8 @@ class ContractsService:
             columns + 6
         )
 
-        self.EntriesRepository.insert_one(entry_dict, session)
+        # INSERINDO O EXTRATO
+        self.extractRepository.insert_extract_document(extract_dict)
 
   def insert_contracts(self, csv):
     content = self.validate_csv_file(csv)
@@ -402,47 +401,43 @@ class ContractsService:
     if not content:
         logger.info("Missing file or in a invalid form.")
         raise ValueError("Invalid CSV file")
+
     logger.info("File sent on request is valid.")
     df = pd.read_csv(StringIO(content))
 
     for index, row in df.iterrows():
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    readyStart = index >= 2
-                    if not readyStart:
-                        continue      
-                    
-                    is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
-                    is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+        readyStart = index >= 2  # true or false
+        if not readyStart:
+            continue      
 
-                    if not is_code_null and not is_name_null:
-                        cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
-                        if not cod_exists:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
-                            profile_id = self.ProfileRepository.insert_one(profile_dict, session)
-                            profile_id = profile_id.inserted_id
+        is_code_null = pd.isnull(df.iloc[index]['COD'])
+        is_name_null = pd.isnull(df.iloc[index]['Nome do Cliente'])
 
-                            contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
-                            self.ContractRepository.insert_one(contract_dict, session)
-                            
-                            self.iterate_by_row(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'), session)
-                            
-                    if is_code_null and not is_name_null:
-                        new_cod = formatting.generate_code(df, index)
-                        while self.cod_already_exists(new_cod):
-                            new_cod = formatting.get_next_sequence(new_cod)
+        if not is_code_null and not is_name_null:
+            cod_exists = self.contractRepository.cod_already_exists(df.iloc[index]['COD'])
+            if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
+                profile_id = self.profileRepository.insert_profile_document(profile_dict)
+                profile_id = profile_id.inserted_id
+                print(profile_id)
 
-                        cod_exists = self.cod_already_exists(new_cod)
-                        if not cod_exists:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                            self.ProfileRepository.insert_one(profile_dict, session)
-                            profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
+                contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
+                self.contractRepository.insert_contract_document(contract_dict)
+                
+                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, df.iloc[index]['COD'])
+                
+        if is_code_null and not is_name_null:
+            new_cod = formatting.generate_cod(df, index)
+            while self.contractRepository.cod_already_exists(new_cod):
+                new_cod = formatting.get_next_sequence(new_cod)
 
-                            contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-                            self.ContractRepository.insert_one(contract_dict, session)
+            cod_exists = self.contractRepository.cod_already_exists(new_cod)
+            if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                self.profileRepository.insert_profile_document(profile_dict)
+                profile_id = self.profileRepository.get_last_profile_document_id(new_cod)
 
-                            self.iterate_by_row(df, index, profile_dict, contract_dict, new_cod, session)
+                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
+                self.contractRepository.insert_contract_document(contract_dict)
 
-                except Exception as e:
-                      raise
+                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, new_cod)

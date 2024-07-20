@@ -2,7 +2,7 @@ from flask import jsonify, abort, request
 from flask_restful import Resource
 import json
 import threading
-from ..services.contracts import ContractsService
+from ..services.reserv_contracts import ContractsService
 from ..clients import clicksignClient, zeevClient
 from ..repositories import ContractsRepository, EntriesRepository, PaymentsRepository, ProfileRepository, processedRequestRepository
 class RestApiResource(Resource):
