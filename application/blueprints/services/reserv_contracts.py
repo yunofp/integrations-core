@@ -343,7 +343,7 @@ class ContractsService:
         self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
         logger.error("processAllContracts | Error processing contract:" + str(requestId), exc_info=True)
 
-  def validate_csv_file(response):
+  def validate_csv_file(self, response): #OK
     if 'file' not in response.files:
         raise ValueError("No file part in the request")
     
@@ -367,318 +367,36 @@ class ContractsService:
     except Exception as e:
         raise ValueError(f"Error processing CSV file: {e}")
 
-  #def generate_cod():
-
-  def cod_already_exists(self, cod):
-        if self.contractRepository.collection.find_one({"cod": cod}) is not None:
-            return True
-        
-        return False
-  
-  def insert_profile_data(self, profile_dict, mdb_session):
-    self.profileRepository.collection.insert_one(profile_dict, session = mdb_session)
-
-  def insert_contract_data(self, contract_dict, mdb_session):
-    self.contractRepository.collection.insert_one(contract_dict, session = mdb_session)
-
-  def insert_payment_data(self, payment_dict, mdb_session):
-    self.paymentRepository.collection.insert_one(payment_dict, session = mdb_session)
-
-  def insert_extract_data(self, extract_dict, mdb_session):
-    self.extractRepository.collection.insert_one(extract_dict, session = mdb_session)
-
-  def horizontal_iteration(self, df, index, profile_dict, contract_dict, contract_service_obj, cod):
-
-    for columns in range(len(df.columns)):
-      readyStart = columns >= 47
-      if not readyStart:
-        continue
-
-      #MMAAAA e MRR
-      print(df.iloc[index]['Nome do Cliente'], "  //  ", df.iloc[0, columns + 0])
-
-      month_year = formatting.get_mmaaaa(df.iloc[0, columns + 0])
-      payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict)
-
-      #INSERINDO O PAGAMENTO
-      with app.dbClient.start_session() as session:
-        with session.start_transaction():
-          try:
-            contract_service_obj.insert_payment_data(self, payment_dict, session)
-
-          except Exception as e:
-            logger.error(f"Error processing payment/extract data: {e}")
-            raise  
-      
-      payment_id = self.paymentRepository.get_last_id()
-      contract_id = self.contractRepository.get_last_id()
-
-      extract_dict = pandas_processement.create_extract_dict(index, df, cod, month_year, payment_id, contract_id, columns + 1, columns, columns + 2, columns + 3, columns + 4, columns + 5, columns + 6)
-
-      #INSERINDO O EXTRATO
-      with app.dbClient.start_session() as session:
-        with session.start_transaction():
-          try:
-            contract_service_obj.insert_extract_data(self, extract_dict, session)
-
-          except Exception as e:
-            logger.error(f"Error processing payment/extract data: {e}")
-            raise  
-      
-      columns = columns + 6
-
-  def horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contract_service_obj, cod):
-    for columns in range(47, len(df.columns), 7):  # Começa em 47, termina no comprimento das colunas, com passo de 6
+  def horizontal_iteration_new(self, df, index, profile_dict, contract_dict, cod):
+    for columns in range(47, len(df.columns), 7):
         # MMAAAA e MRR
         print(df.iloc[index]['Nome do Cliente'], "  //  ", df.iloc[0, columns])
 
         month_year = formatting.get_mmaaaa(df.iloc[0, columns])
-        payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict)
+        payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
 
         # INSERINDO O PAGAMENTO
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    contract_service_obj.insert_payment_data(self, payment_dict, session)
-                except Exception as e:
-                    logger.error(f"Error processing payment/extract data: {e}")
-                    raise  
+        self.paymentRepository.insert_payment_document(payment_dict)
 
         payment_id = self.paymentRepository.get_last_id()
         contract_id = self.contractRepository.get_last_id()
 
         extract_dict = pandas_processement.create_extract_dict(
             index, df, cod, month_year, payment_id, contract_id, 
-            columns + 1, columns, columns + 2, columns + 3, columns + 4, columns + 5, columns + 6
+            columns + 1, 
+            columns, 
+            columns + 2, 
+            columns + 3, 
+            columns + 4, 
+            columns + 5, 
+            columns + 6
         )
 
         # INSERINDO O EXTRATO
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    contract_service_obj.insert_extract_data(self, extract_dict, session)
-                except Exception as e:
-                    logger.error(f"Error processing payment/extract data: {e}")
-                    raise
-      
-  def insertContracts(self, csv):
-    contractsService = ContractsService
-    content = contractsService.validate_csv_file(csv)
+        self.extractRepository.insert_extract_document(extract_dict)
 
-    if not content:
-      logger.info("Missing file or in a invalid form.")
-      raise ValueError("Invalid CSV file")
-    
-    logger.info("File sent on request is valid.")
-    df = pd.read_csv(StringIO(content))
-
-    #print(df.iloc[0, 47])
-
-    for index, row in df.iterrows():
-      readyStart = index >= 2 # true or false
-      if not readyStart:
-        continue
-      
-      #print(len(df.columns))
-      is_code_null = pd.isnull(df.iloc[index]['COD'])
-      is_name_null = pd.isnull(df.iloc[index]['Nome do Cliente'])
-
-      if not is_code_null and not is_name_null:
-        cod_exists = contractsService.cod_already_exists(self, df.iloc[index]['COD'])
-        if not cod_exists:
-          
-           #INICIANDO A TRANSAÇAO DE DADOS COM O BANCO
-          with app.dbClient.start_session() as session:
-            with session.start_transaction():
-              try:
-                profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
-                contractsService.insert_profile_data(self, profile_dict, session)
-                profile_id = self.contractRepository.collection.find_one({"cod": df.iloc[index]['COD']}, {"_id": 1})["_id"]
-                contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
-                contract_dict["profileId"] = contract_dict['cod']
-                contractsService.insert_contract_data(self, contract_dict, session)
-
-              except Exception as e:
-                logger.error(f"Error processing contract data: {e}")
-                raise  # Rethrow the exception to trigger rollback
-
-               #self.contractRepository.collection.insert_one({"cod": df.iloc[index]['COD']}, session = session)
-
-          contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, df.iloc[index]['COD'])
-
-      elif is_code_null and not is_name_null:
-        new_cod = formatting.generate_cod(df, index)
-        while contractsService.cod_already_exists(self, new_cod):
-            new_cod = formatting.get_next_sequence(new_cod)
-
-        cod_exists = contractsService.cod_already_exists(self, new_cod)
-        if not cod_exists:
-           
-          # INICIANDO A TRANSAÇÃO DE DADOS COM O BANCO
-          with app.dbClient.start_session() as session:
-              with session.start_transaction():
-                  try:
-                      profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                      contractsService.insert_profile_data(self, profile_dict, session)
-                      profile_id = self.contractRepository.collection.find_one({"cod": new_cod}, {"_id": 1})["_id"]
-                      contract_dict = pandas_processement.create_contract_dict(index, new_cod, df)
-                      contract_dict["profileId"] = contract_dict['cod']
-                      contractsService.insert_contract_data(self, contract_dict, session)
-                  except Exception as e:
-                      logger.error(f"Error processing contract data: {e}")
-                      raise  # Rethrow the exception to trigger rollback
-
-          contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, new_cod)
-
-    return True
-         
-      #print(df.iloc[index, 2])
-      
-    return True
-  
-  def insertContracts(self, csv):
-    contractsService = ContractsService
-    content = contractsService.validate_csv_file(csv)
-
-    if not content:
-      logger.info("Missing file or in a invalid form.")
-      raise ValueError("Invalid CSV file")
-    
-    logger.info("File sent on request is valid.")
-    df = pd.read_csv(StringIO(content))
-
-    #print(df.iloc[0, 47])
-
-    for index, row in df.iterrows():
-      readyStart = index >= 2 # true or false
-      if not readyStart:
-        continue
-      
-      #print(len(df.columns))
-      is_code_null = pd.isnull(df.iloc[index]['COD'])
-      is_name_null = pd.isnull(df.iloc[index]['Nome do Cliente'])
-
-      if not is_code_null and not is_name_null:
-        cod_exists = contractsService.cod_already_exists(self, df.iloc[index]['COD'])
-        if not cod_exists:
-          
-           #INICIANDO A TRANSAÇAO DE DADOS COM O BANCO (ENVIANDO OS DADOS DO PERFIL)
-          with app.dbClient.start_session() as session:
-            with session.start_transaction():
-              try:
-                profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
-                contractsService.insert_profile_data(self, profile_dict, session)
-
-                profile_id = self.contractRepository.collection.find_one({"cod": df.iloc[index]['COD']}, {"_id": 1})["_id"]
-                contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
-
-                contract_dict["profileId"] = profile_id
-                contractsService.insert_contract_data(self, contract_dict, session)
-
-              except Exception as e:
-                logger.error(f"Error processing contract data: {e}")
-                raise  # Rethrow the exception to trigger rollback
-
-               #self.contractRepository.collection.insert_one({"cod": df.iloc[index]['COD']}, session = session)
-
-          contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, df.iloc[index]['COD'])
-
-      elif is_code_null and not is_name_null:
-        new_cod = formatting.generate_cod(df, index)
-        while contractsService.cod_already_exists(self, new_cod):
-            new_cod = formatting.get_next_sequence(new_cod)
-
-        cod_exists = contractsService.cod_already_exists(self, new_cod)
-        if not cod_exists:
-           
-          # INICIANDO A TRANSAÇÃO DE DADOS COM O BANCO
-          with app.dbClient.start_session() as session:
-              with session.start_transaction():
-                  try:
-                      profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                      contractsService.insert_profile_data(self, profile_dict, session)
-
-                      profile_id = self.contractRepository.collection.find_one({"cod": new_cod}, {"_id": 1})["_id"]
-                      contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-
-                      contract_dict["profileId"] = profile_id
-                      contractsService.insert_contract_data(self, contract_dict, session)
-                  except Exception as e:
-                      logger.error(f"Error processing contract data: {e}")
-                      raise  # Rethrow the exception to trigger rollback
-
-          contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, new_cod)
-
-    return True
-         
-      #print(df.iloc[index, 2])
-      
-    return True
-  
-  def insert_profile_part_cod(self, index, df):
-     contractsService = ContractsService
-     with app.dbClient.start_session() as session:
-                    with session.start_transaction():
-                        try:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
-                            contractsService.insert_profile_data(self, profile_dict, session)
-
-                            return profile_dict
-                        except Exception as e:
-                            logger.error(f"Error processing profile data: {e}")
-                            raise  # Rethrow the exception to trigger rollback
-                        
-  def insert_contract_part_cod(self, index, df):
-    contractsService = ContractsService
-    with app.dbClient.start_session() as session:
-                    with session.start_transaction():
-                        try:
-                            print("SLA QHUALQUER COISA", df.iloc[index]['COD'])
-                            profile_id = self.contractRepository.collection.find_one({"cod": 110001}, {"_id": 1})
-                            print("/////////////// PROFILE ID ////////////", profile_id)
-                            contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
-
-                            contract_dict["profileId"] = profile_id
-                            contractsService.insert_contract_data(self, contract_dict, session)
-
-                            return contract_dict
-                        except Exception as e:
-                            logger.error(f"Error processing contract data: {e}")
-                            raise  # Rethrow the exception to trigger rollback
-  
-  def insert_profile_part_no_cod(self, index, df, new_cod):
-     contractsService = ContractsService
-     with app.dbClient.start_session() as session:
-                    with session.start_transaction():
-                        try:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                            contractsService.insert_profile_data(self, profile_dict, session)
-
-                            return profile_dict
-                        except Exception as e:
-                            logger.error(f"Error processing profile data: {e}")
-                            raise  # Rethrow the exception to trigger rollback
-                    
-  def insert_contract_part_no_cod(self, index, df, new_cod):
-     contractsService = ContractsService
-     with app.dbClient.start_session() as session:
-                    with session.start_transaction():
-                        try:
-                            profile_id = self.contractRepository.collection.find_one({"cod": new_cod}, {"_id": 1})["_id"]
-                            contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-
-                            contract_dict["profileId"] = profile_id
-                            contractsService.insert_contract_data(self, contract_dict, session)
-
-                            return contract_dict
-                        except Exception as e:
-                            logger.error(f"Error processing contract data: {e}")
-                            raise  # Rethrow the exception to trigger rollback
-    
-
-  def insertContractsNew(self, csv):
-    contractsService = ContractsService
-    content = contractsService.validate_csv_file(csv)
+  def insert_contracts(self, csv):
+    content = self.validate_csv_file(csv)
 
     if not content:
         logger.info("Missing file or in a invalid form.")
@@ -690,37 +408,36 @@ class ContractsService:
     for index, row in df.iterrows():
         readyStart = index >= 2  # true or false
         if not readyStart:
-            continue
+            continue      
 
         is_code_null = pd.isnull(df.iloc[index]['COD'])
         is_name_null = pd.isnull(df.iloc[index]['Nome do Cliente'])
 
         if not is_code_null and not is_name_null:
-            cod_exists = contractsService.cod_already_exists(self, df.iloc[index]['COD'])
+            cod_exists = self.contractRepository.cod_already_exists(df.iloc[index]['COD'])
             if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
+                profile_id = self.profileRepository.insert_profile_document(profile_dict)
+                profile_id = profile_id.inserted_id
+                print(profile_id)
 
-                # INICIANDO A TRANSAÇÃO DE DADOS COM O BANCO (ENVIANDO OS DADOS DO PERFIL)
-                profile_dict = self.insert_profile_part_cod(index, df)
-
-                # INICIANDO A TRANSAÇÃO PARA DEFINIR O PROFILE_ID E INSERIR OS DADOS DO CONTRATO
-                contract_dict = self.insert_contract_part_cod(index, df)
-
-                contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, df.iloc[index]['COD'])
-
-        elif is_code_null and not is_name_null:
+                contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
+                self.contractRepository.insert_contract_document(contract_dict)
+                
+                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, df.iloc[index]['COD'])
+                
+        if is_code_null and not is_name_null:
             new_cod = formatting.generate_cod(df, index)
-            while contractsService.cod_already_exists(self, new_cod):
+            while self.contractRepository.cod_already_exists(new_cod):
                 new_cod = formatting.get_next_sequence(new_cod)
 
-            cod_exists = contractsService.cod_already_exists(self, new_cod)
+            cod_exists = self.contractRepository.cod_already_exists(new_cod)
             if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                self.profileRepository.insert_profile_document(profile_dict)
+                profile_id = self.profileRepository.get_last_profile_document_id(new_cod)
 
-                # INICIANDO A TRANSAÇÃO DE DADOS COM O BANCO
-                profile_dict = self.insert_profile_part_no_cod(index, df, new_cod)
+                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
+                self.contractRepository.insert_contract_document(contract_dict)
 
-                # INICIANDO A TRANSAÇÃO PARA DEFINIR O PROFILE_ID E INSERIR OS DADOS DO CONTRATO
-                contract_dict = self.insert_contract_part_no_cod(index, df, new_cod)
-
-                contractsService.horizontal_iteration_new(self, df, index, profile_dict, contract_dict, contractsService, new_cod)
-
-    return True
+                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, new_cod)

@@ -78,3 +78,9 @@ def defineVariablesWork(contractValues):
         "observacoes": findByName(contractValues, "observacao") or findByName(contractValues, "obervacao"),
     }
     return clickSignVariables
+
+def validate_contract_cod(value):
+    if len(value) == 6 and value.isdigit():
+        if value[0] in '123' and value[1] in '12':
+            return True
+    return False
