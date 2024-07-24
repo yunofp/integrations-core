@@ -370,9 +370,9 @@ class ContractsService:
   def horizontal_iteration_new(self, df, index, profile_dict, contract_dict, cod):
     for columns in range(47, len(df.columns), 7):
         # MMAAAA e MRR
-        print(df.iloc[index]['Nome do Cliente'], "  //  ", df.iloc[0, columns])
+        print(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'), "  //  ", pandas_processement.get_cell_content(df, 0, columns))
 
-        month_year = formatting.get_mmaaaa(df.iloc[0, columns])
+        month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
         payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
 
         # INSERINDO O PAGAMENTO
@@ -410,21 +410,21 @@ class ContractsService:
         if not readyStart:
             continue      
 
-        is_code_null = pd.isnull(df.iloc[index]['COD'])
-        is_name_null = pd.isnull(df.iloc[index]['Nome do Cliente'])
+        is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
+        is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
 
         if not is_code_null and not is_name_null:
-            cod_exists = self.contractRepository.cod_already_exists(df.iloc[index]['COD'])
+            cod_exists = self.contractRepository.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
             if not cod_exists:
-                profile_dict = pandas_processement.create_profile_dict(index, df, df.iloc[index]['COD'])
+                profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
                 profile_id = self.profileRepository.insert_profile_document(profile_dict)
                 profile_id = profile_id.inserted_id
                 print(profile_id)
 
-                contract_dict = pandas_processement.create_contract_dict(index, df.iloc[index]['COD'], df, profile_id)
+                contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
                 self.contractRepository.insert_contract_document(contract_dict)
                 
-                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, df.iloc[index]['COD'])
+                self.horizontal_iteration_new(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'))
                 
         if is_code_null and not is_name_null:
             new_cod = formatting.generate_cod(df, index)

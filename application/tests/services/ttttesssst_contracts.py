@@ -26,8 +26,12 @@ def app_context(app):
 def service(app_context):
     zeevClient = Mock()
     processedRequestRepository = Mock()
+    profileRepository = Mock()
+    extractRepository = Mock()
+    paymentRepository = Mock()
+    contractRepository = Mock()
     clickSignClient = Mock()
-    contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient)
+    contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient, profileRepository, extractRepository, paymentRepository, contractRepository)
     return contractService, zeevClient, processedRequestRepository, clickSignClient
 
 def test_should_process_sucess_grow_contract(service, mocker):
