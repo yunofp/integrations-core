@@ -52,7 +52,6 @@ def create_contract_dict(index, code, df, profile_id):
     contracts["minimalFee"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 29))
     contracts["deadline"] = get_cell_content(df, index, 'Vigência (meses)')
     contracts["debtDay"] = debt_day[:2]
-
     if get_cell_content(df, index, 'Autorização de Cobrança Pela Corretora') == "NÃO": 
         contracts["brokerPermission"] = False
     else:
