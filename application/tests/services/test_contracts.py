@@ -107,12 +107,21 @@ def test_should_process_sucess_wealth_contract(service, mocker):
     clickSignClient.notificateEnvelope = MagicMock(return_value={})
     
     spyInsert = mocker.spy(contractService, '_insertSuccessfullyProcessedRequest')  
-     
+    spyClickSignClientPostWealth = mocker.spy(clickSignClient, 'sendClickSignPostWealth')
+    
     contractService.processAllContracts()
     
-    spyInsert.assert_called_once_with(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
+    args, kwargs = spyClickSignClientPostWealth.call_args
+    combined_args = {**dict(enumerate(args)), **kwargs}
 
+    implatationValue = combined_args[0].get('Valor da Implantação', 'Argument not found')
+      
+    assert spyClickSignClientPostWealth.call_count == 1
+    assert implatationValue == '400,00'
+    
+    spyInsert.assert_called_once_with(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
     assert spyInsert.call_args == call(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
+    
     
 def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
@@ -136,6 +145,25 @@ def test_should_process_sucess_grow_and_wealth_contract(service, mocker):
     
     spyInsert.assert_called_once_with(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
     assert spyInsert.call_args == call(requestId, 'Grow & Wealth', [{'type': 'Grow', 'id': 1}, {'type': 'Wealth', 'id': 2}])
+ 
+def test_should_process_sucess_grow_and_wealth_contract_with_correct_variables(service, mocker):
+    contractService, zeevClient, processedRequestRepository, clickSignClient = service
+  
+    zeevClient.getContractsRequestsByDate = MagicMock(return_value=zeev_responses.grow_response_wealth_response)
+    processedRequestRepository.findByRequestId = MagicMock(return_value=False)
+    clickSignClient.createEnvelope = MagicMock(return_value={'data' : {'id': 1}})
+    clickSignClient.sendClickSignPostGrow = MagicMock(return_value={'data': {'id': 1}})
+    spyClickSignClientPostWealth = mocker.spy(clickSignClient, 'sendClickSignPostWealth')
+    
+    contractService.processAllContracts()
+    args, kwargs = spyClickSignClientPostWealth.call_args
+    combined_args = {**dict(enumerate(args)), **kwargs}
+
+    implatationValue = combined_args[0].get('Valor da Implantação', 'Argument not found')
+      
+    assert spyClickSignClientPostWealth.call_count == 1
+    assert implatationValue == '0,00'
+  
  
 def test_should_process_many_contract(service, mocker):
     contractService, zeevClient, processedRequestRepository, clickSignClient = service
