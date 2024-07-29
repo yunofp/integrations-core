@@ -21,6 +21,7 @@ class ContractsService:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
   def processContract(self, requestId, contractValues):
+
     envelope = self.clickSignClient.createEnvelope(requestId)
     envelopeId = envelope.get('data', {}).get('id')
     logger.info("processContract | envelopeId:" + str(envelopeId))
@@ -52,15 +53,14 @@ class ContractsService:
       documents.append({'type': 'Work', 'id': documentId})
       
     elif workTypeFormatted == "Grow & Wealth":
-      
       contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
-      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues)
-     
+      
+      implantationValue = '0,00'
+      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues, implantationValue)
       documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
       newEnvelope = self.clickSignClient.createEnvelope(str(requestId) + 'Wealth')
       newEnvelopeId = newEnvelope.get('data', {}).get('id')
       documentIdWealth = self._processContractSteps(contractVariablesWealth, newEnvelopeId, 'Wealth')
-      
       documents.extend([{'type': 'Grow', 'id': documentIdGrow}, {'type': 'Wealth', 'id': documentIdWealth}])
       
     else:
@@ -90,7 +90,6 @@ class ContractsService:
           raise Exception("processContract | Error while creating document:" + str(growResponse))
         
       elif contractType == 'Wealth':
-        
         wealthResponse = self.clickSignClient.sendClickSignPostWealth(contractVariables, envelopeId, filename)
         documentId = wealthResponse.get('data', {}).get('id')
         
