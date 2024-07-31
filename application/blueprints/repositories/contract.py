@@ -3,7 +3,7 @@ from flask import current_app as app
 class contractRepository:
     def __init__(self):
         self.config = app.config
-        self.collection = app.db.get_collection("contract")
+        self.collection = app.db.get_collection("contracts")
 
     def getCod(self):
         last_inserted_document = self.collection.find_one(sort=[('_id', -1)])
