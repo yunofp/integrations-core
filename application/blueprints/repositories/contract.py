@@ -5,7 +5,7 @@ class contractRepository:
         self.config = app.config
         self.collection = app.db.get_collection("contracts")
 
-    def getCod(self):
+    def get_last_inserted_contract_code(self):
         last_inserted_document = self.collection.find_one(sort=[('_id', -1)])
         return last_inserted_document.get('cod')
     
