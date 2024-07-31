@@ -45,7 +45,7 @@ def create_contract_dict(index, cod, df, profile_id):
     #contracts["internalOrigin"] = 1
     #contracts["externalOrigin"] = 0
 
-    contracts["status"] = get_cell_content(df, index, 1)
+    contracts['status'] = "DESCONHECIDO" if pd.isnull(get_cell_content(df, index, 1)) else get_cell_content(df, index, 1)
     contracts["contractType"] = get_cell_content(df, index, 'Contrato')
 
     # VALORES
