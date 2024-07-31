@@ -401,7 +401,6 @@ class ContractsService:
     if not content:
         logger.info("Missing file or in a invalid form.")
         raise ValueError("Invalid CSV file")
-
     logger.info("File sent on request is valid.")
     df = pd.read_csv(StringIO(content))
 
@@ -409,7 +408,7 @@ class ContractsService:
         readyStart = index >= 2  # true or false
         if not readyStart:
             continue      
-
+        
         is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
         is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
 
@@ -419,7 +418,6 @@ class ContractsService:
                 profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
                 profile_id = self.profileRepository.insert_profile_document(profile_dict)
                 profile_id = profile_id.inserted_id
-                print(profile_id)
 
                 contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
                 self.contractRepository.insert_contract_document(contract_dict)
