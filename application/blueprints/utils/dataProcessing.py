@@ -79,7 +79,7 @@ def defineVariablesWork(contractValues):
     }
     return clickSignVariables
 
-def validate_contract_cod(value):
+def validate_contract_code(value):
     if len(value) == 6 and value.isdigit():
         if value[0] in '123' and value[1] in '12':
             return True

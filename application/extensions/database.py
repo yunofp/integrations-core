@@ -1,5 +1,4 @@
 from pymongo.mongo_client import MongoClient
-from pymongo.client_session import ClientSession
 from pymongo.server_api import ServerApi
 import logging
 

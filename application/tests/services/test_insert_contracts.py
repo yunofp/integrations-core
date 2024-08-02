@@ -5,7 +5,7 @@ import pandas as pd
 import os
 from application.blueprints.services import pandas_processement
 from application.blueprints.utils import formatting
-from application.blueprints.services.reserv_contracts import ContractsService
+from application.blueprints.services.contracts import ContractsService
 import logging
 import requests
 from io import BytesIO
@@ -159,10 +159,10 @@ def test_should_read_and_insert_data_correctly(mocker, service):
             "payer.name": "IZA CHOZE",
             "payer.CPFCNPJ": "35520574120",
             "value": 500.0,
-            "dueDate": "05/12/2025",
+            "dueDate": formatting.convert_to_utc_date("05/12/2025"),
             "status": "INATIVO",
             "currency": "BRL",
-            "createdAt": fake_datetime,  # Normalize the datetime
+            "createdAt": fake_datetime, 
             "paymentMethod": "CARTÃO"
         }
     )

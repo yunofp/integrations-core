@@ -64,10 +64,8 @@ def formatServiceType(service):
     return serviceType
 
 def verifyCpfCnpj(document):
-    # Remove todos os caracteres que não sejam números
     numeric_document = ''.join(filter(str.isdigit, document))
     
-    # Verifica se o tamanho corresponde a um CPF ou CNPJ
     if len(numeric_document) == 11:
         return numeric_document
     elif len(numeric_document) == 14:
@@ -84,15 +82,10 @@ def extract_numbers_as_double(s):
     return result
 
 def clean_currency_string_to_double(currency_str):
-    # Substitui "INATIVO", "nan" e "R$" por "0"
     cleaned_str = str(currency_str).replace("INATIVO", "0").replace("nan", "0").replace('R$', '0').replace('-', "0").strip()
-    # Remove qualquer espaço adicional
     cleaned_str = re.sub(r'\s+', '', cleaned_str)
-    # Remove todos os pontos
     cleaned_str = cleaned_str.replace('.', '')
-    # Substitui a última vírgula (casa decimal) por um ponto
     cleaned_str = re.sub(r',', '.', cleaned_str, count=1)
-    # Remove quaisquer vírgulas restantes
     cleaned_str = cleaned_str.replace(',', '')
     return float(cleaned_str)
 
@@ -105,7 +98,7 @@ def processing_number_insert(value):
         return clean_currency_string_to_double(value)
     
 def get_mmaaaa(cell):
-    cell = str(cell)  # Converte cell para string
+    cell = str(cell) 
     ftd = cell[:3].lower()
 
     months = {
@@ -130,8 +123,7 @@ def get_mmaaaa(cell):
     else:
         return "Invalid cell value!"
     
-def generate_cod(df, index):
-        # Definir o primeiro dígito com base no campo Contrato
+def generate_code(df, index):
         contract_type = df.iloc[index]['Contrato']
         if contract_type == 'GROW':
             first_digit = '1'
@@ -142,23 +134,20 @@ def generate_cod(df, index):
         else:
             raise ValueError(f"Invalid contract type: {contract_type}")
 
-        # Definir o segundo dígito com base no nome do closer
         closer_name = df.iloc[index]['Closer']
         if closer_name in ['BRUNO DEOR', 'MAX MULLER']:
             second_digit = '2'
         else:
             second_digit = '1'
 
-        # Obter o próximo número sequencial inicial
-        next_sequence = 1  # Inicializando a sequência
-        sequence_str = f"{next_sequence:04d}"  # Formatar com 4 dígitos, preenchendo com zeros à esquerda
+        next_sequence = 1
+        sequence_str = f"{next_sequence:04d}"
 
         return int(f"{first_digit}{second_digit}{sequence_str}")
 
 def get_next_sequence(cod):
-    # Separar os 4 últimos dígitos do código e incrementar 1
-    prefix = cod // 10000  # Obter os dois primeiros dígitos
-    current_sequence = cod % 10000  # Obter os quatro últimos dígitos
+    prefix = cod // 10000 
+    current_sequence = cod % 10000
     next_sequence = current_sequence + 1
     return int(f"{prefix:02d}{next_sequence:04d}")
 
