@@ -171,7 +171,7 @@ def test_should_read_and_insert_data_correctly(mocker, service, app):
             "payer.name": "IZA CHOZE",
             "payer.CPFCNPJ": "35520574120",
             "value": 500.0,
-            "dueDate": "05/12/2025",
+            "dueDate": formatting.convert_to_utc_date("05/12/2025"),
             "status": "INATIVO",
             "currency": "BRL",
             "createdAt": fake_datetime,

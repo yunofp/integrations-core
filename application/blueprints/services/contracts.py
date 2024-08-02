@@ -29,13 +29,6 @@ class ContractsService:
       return result
     except Exception as e:
       logger.error("listManyRetries | Error listing processed requests:" + str(e))
-
-  def listManyRetriesContract(self):
-    try:
-      result = self.contractRepository.getManyRetries()
-      return result
-    except Exception as e:
-      logger.error("listManyRetries | Error listing processed requests:" + str(e))
     
   def processContract(self, requestId, contractValues):
 
