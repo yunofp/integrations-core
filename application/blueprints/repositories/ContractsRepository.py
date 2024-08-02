@@ -22,13 +22,5 @@ class ContractsRepository:
             return self.collection.find_one({"code": code}, projection={'code': 1, '_id': 1})   
         return self.collection.find_one({"code": code})['code']
 
-    def create_transaction(self, contract_dict):
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    self.insert_one(contract_dict, session)
-                except Exception as e:
-                      raise
-
 
     

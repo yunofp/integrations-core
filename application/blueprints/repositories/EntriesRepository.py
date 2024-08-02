@@ -12,10 +12,3 @@ class EntriesRepository:
     def insert_one(self, entry_dict, mdb_session):
         self.collection.insert_one(entry_dict, session = mdb_session)
     
-    def create_transaction(self, entry_dict):
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    self.insert_one(entry_dict, session)
-                except Exception as e:
-                      raise

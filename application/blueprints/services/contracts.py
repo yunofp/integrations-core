@@ -364,7 +364,7 @@ class ContractsService:
     
     return False
 
-  def iterate_by_row(self, df, index, profile_dict, contract_dict, cod):
+  def iterate_by_row(self, df, index, profile_dict, contract_dict, cod, session):
     for columns in range(47, len(df.columns), 7):
         
         print(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'), "  //  ", pandas_processement.get_cell_content(df, 0, columns))
@@ -372,7 +372,7 @@ class ContractsService:
         month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
         payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
 
-        self.PaymentRepository.create_transaction(payment_dict)
+        self.PaymentRepository.insert_one(payment_dict, session)
 
         payment_id = self.PaymentRepository.get_last_id()
         contract_id = self.ContractRepository.get_last_id()
@@ -388,7 +388,7 @@ class ContractsService:
             columns + 6
         )
 
-        self.EntriesRepository.create_transaction(entry_dict)
+        self.EntriesRepository.insert_one(entry_dict, session)
 
   def insert_contracts(self, csv):
     content = self.validate_csv_file(csv)
@@ -400,37 +400,43 @@ class ContractsService:
     df = pd.read_csv(StringIO(content))
 
     for index, row in df.iterrows():
-        readyStart = index >= 2
-        if not readyStart:
-            continue      
-        
-        is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
-        is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+        with app.dbClient.start_session() as session:
+            with session.start_transaction():
+                try:
+                    readyStart = index >= 2
+                    if not readyStart:
+                        continue      
+                    
+                    is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
+                    is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
 
-        if not is_code_null and not is_name_null:
-            cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
-            if not cod_exists:
-                profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
-                profile_id = self.ProfileRepository.create_transaction(profile_dict)
-                profile_id = profile_id.inserted_id
+                    if not is_code_null and not is_name_null:
+                        cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
+                        if not cod_exists:
+                            profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
+                            profile_id = self.ProfileRepository.insert_one(profile_dict, session)
+                            profile_id = profile_id.inserted_id
 
-                contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
-                self.ContractRepository.create_transaction(contract_dict)
-                
-                self.iterate_by_row(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'))
-                
-        if is_code_null and not is_name_null:
-            new_cod = formatting.generate_code(df, index)
-            while self.cod_already_exists(new_cod):
-                new_cod = formatting.get_next_sequence(new_cod)
+                            contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
+                            self.ContractRepository.insert_one(contract_dict, session)
+                            
+                            self.iterate_by_row(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'), session)
+                            
+                    if is_code_null and not is_name_null:
+                        new_cod = formatting.generate_code(df, index)
+                        while self.cod_already_exists(new_cod):
+                            new_cod = formatting.get_next_sequence(new_cod)
 
-            cod_exists = self.cod_already_exists(new_cod)
-            if not cod_exists:
-                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                self.ProfileRepository.create_transaction(profile_dict)
-                profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
+                        cod_exists = self.cod_already_exists(new_cod)
+                        if not cod_exists:
+                            profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                            self.ProfileRepository.insert_one(profile_dict, session)
+                            profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
 
-                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-                self.ContractRepository.create_transaction(contract_dict)
+                            contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
+                            self.ContractRepository.insert_one(contract_dict, session)
 
-                self.iterate_by_row(df, index, profile_dict, contract_dict, new_cod)
+                            self.iterate_by_row(df, index, profile_dict, contract_dict, new_cod, session)
+
+                except Exception as e:
+                      raise

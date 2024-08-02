@@ -13,10 +13,3 @@ class PaymentsRepository:
         result = self.collection.insert_one(payment_dict, session = mdb_session)
         return result.inserted_id
     
-    def create_transaction(self, payment_dict):
-        with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    self.insert_one(payment_dict, session)
-                except Exception as e:
-                      raise
