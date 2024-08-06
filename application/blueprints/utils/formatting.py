@@ -124,7 +124,7 @@ def get_mmaaaa(cell):
         lfd = cell[-4:]
         return f"{mm}/{lfd}"
     else:
-        return "Invalid cell value!"
+        raise "Invalid cell value!"
     
 def generate_code(df, index):
         contract_type = df.iloc[index]['Contrato']

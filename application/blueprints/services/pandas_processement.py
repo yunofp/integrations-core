@@ -118,7 +118,7 @@ def create_entry_dict(index, df, code, mmaaaa, paymentId, contractId, aum_pos, m
     entry["aum.estimated"] = formatting.processing_number_insert(get_cell_content(df, index, aum_pos))
     entry["aum.actual"] = formatting.processing_number_insert(get_cell_content(df, index, aum_pos))
     entry["mrr"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, mrr_pos))
-    entry["dueDate"] = formatting.convert_to_utc_date(dueDate[:2] + "/" + mmaaaa)
+    entry["dueDate"] = formatting.convert_to_utc_date(dueDate[:2] + "/" + mmaaaa) if payDate != "-" else "01" + "/" + mmaaaa
     entry["paymentDate"] = payDate[:2] + "/" + mmaaaa
     entry["value"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, 29))
     entry["implementedPayment"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, imp_payment_pos))

@@ -63,7 +63,7 @@ def service(app_context, mocker):
     ProfileRepository.insert_one.return_value = Mock(inserted_id=1)
     EntriesRepository = Mock()
     PaymentRepository = Mock()
-    PaymentRepository.get_last_id.return_value = "1234"
+    PaymentRepository.insert_one.return_value = "1234"
     ContractRepository = Mock()
     clickSignClient = Mock()
     contractService = ContractsService(
@@ -171,7 +171,7 @@ def test_should_read_and_insert_data_correctly(mocker, service, app):
             "payer.name": "IZA CHOZE",
             "payer.CPFCNPJ": "35520574120",
             "value": 500.0,
-            "dueDate": formatting.convert_to_utc_date("05/12/2025"),
+            "dueDate": "05/12/2025",
             "status": "INATIVO",
             "currency": "BRL",
             "createdAt": fake_datetime,

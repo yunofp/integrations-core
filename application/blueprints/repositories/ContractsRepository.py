@@ -18,9 +18,9 @@ class ContractsRepository:
         return result.inserted_id
     
     def find_by_code(self, code, only_id = None):
-        if only_id == None:
-            return self.collection.find_one({"code": code}, projection={'code': 1, '_id': 1})   
-        return self.collection.find_one({"code": code})['code']
+        if only_id:
+            return self.collection.find_one({"code": code}, projection={'_id': 1})
+        return self.collection.find_one({"code": code})
 
 
     

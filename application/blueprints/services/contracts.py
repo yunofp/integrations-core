@@ -371,9 +371,7 @@ class ContractsService:
         month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
         payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
 
-        self.PaymentRepository.insert_one(payment_dict, session)
-
-        payment_id = self.PaymentRepository.get_last_id()
+        payment_id = self.PaymentRepository.insert_one(payment_dict, session)
         contract_id = self.ContractRepository.get_last_id()
 
         entry_dict = pandas_processement.create_entry_dict(
