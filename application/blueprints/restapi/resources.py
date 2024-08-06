@@ -4,7 +4,7 @@ import json
 import threading
 from ..services.contracts import ContractsService
 from ..clients import clicksignClient, zeevClient
-from ..repositories import contractsRepository, entriesRepository, paymentsRepository, profileRepository, processedRequestRepository
+from ..repositories import contractsRepository, entries_Repository, payments_Repository, profile_Repository, processedRequestRepository
 class RestApiResource(Resource):
   def get(self):
     return jsonify({'message': '> Api is alive! <'})
@@ -17,9 +17,9 @@ class ContractsResource(Resource):
     self.zeevClient = zeevClient.ZeevClient()
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
-    self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
-    self.profileRepository = profileRepository.ProfileRepository()
+    self.entriesRepository = entries_Repository.EntriesRepository()
+    self.paymentsRepository = payments_Repository.PaymentsRepository()
+    self.profileRepository = profile_Repository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
 
@@ -33,9 +33,9 @@ class ContractsResourceRetry(Resource):
     self.zeevClient = zeevClient.ZeevClient()
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
-    self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
-    self.profileRepository = profileRepository.ProfileRepository()
+    self.entriesRepository = entries_Repository.EntriesRepository()
+    self.paymentsRepository = payments_Repository.PaymentsRepository()
+    self.profileRepository = profile_Repository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
     result = self.service.listManyRetries()
@@ -46,9 +46,9 @@ class ContractsResourceRetry(Resource):
     self.zeevClient = zeevClient.ZeevClient()
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
-    self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
-    self.profileRepository = profileRepository.ProfileRepository()
+    self.entriesRepository = entries_Repository.EntriesRepository()
+    self.paymentsRepository = payments_Repository.PaymentsRepository()
+    self.profileRepository = profile_Repository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
     
@@ -60,9 +60,9 @@ class ContractsResourceRetry(Resource):
 class ContractsResourceInput(Resource):
   def post(self):
     csv = request
-    self.profileRepository = profileRepository.ProfileRepository()
-    self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
+    self.profileRepository = profile_Repository.ProfileRepository()
+    self.entriesRepository = entries_Repository.EntriesRepository()
+    self.paymentsRepository = payments_Repository.PaymentsRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
 
