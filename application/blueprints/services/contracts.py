@@ -1,17 +1,27 @@
 
 import logging
+import pandas as pd
+from io import StringIO
 import requests
 from datetime import datetime, timezone, timedelta
 from ..utils import formatting, dataProcessing
 from flask import current_app as app
+from flask import jsonify
 import pytz 
+from . import pandas_processement
+import time
+
 logger = logging.getLogger(__name__)
 class ContractsService:
-  def __init__(self, zeevClient, processedRequestRepository, clickSignClient):
+  def __init__(self, zeevClient, processedRequestRepository, clickSignClient, ProfileRepository, EntriesRepository, PaymentRepository, ContractRepository):
     self.zeevClient = zeevClient
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
     self.config = app.config
+    self.ProfileRepository = ProfileRepository
+    self.EntriesRepository = EntriesRepository
+    self.PaymentRepository = PaymentRepository
+    self.ContractRepository = ContractRepository
 
   def listManyRetries(self):
     try:
@@ -89,6 +99,7 @@ class ContractsService:
         
         growResponse = self.clickSignClient.sendClickSignPostGrow(contractVariables, envelopeId, filename)
         documentId = growResponse.get('data', {}).get('id')
+        
         if not documentId:
           raise Exception("processContract | Error while creating document:" + str(growResponse))
         
@@ -327,3 +338,105 @@ class ContractsService:
         
         self._insertFailedProcessedRequest(requestId, True, e.__str__(), 'error', True)
         logger.error("processAllContracts | Error processing contract:" + str(requestId), exc_info=True)
+
+  def validate_csv_file(self, response):
+    if 'file' not in response.files:
+        raise ValueError("No file part in the request")
+    
+    file = response.files['file']
+    
+    if file.filename == '':
+        raise ValueError("No selected file")
+    
+    if not file.filename.lower().endswith('.csv'):
+        raise ValueError("The received file is not a CSV")
+
+    try:
+        content = file.read().decode('utf-8')
+        
+        df = pd.read_csv(StringIO(content))
+        return content
+    
+    except Exception as e:
+        raise ValueError(f"Error processing CSV file: {e}")
+    
+  def cod_already_exists(self, code):
+    if self.ContractRepository.find_by_code(code) is not None:
+      return True
+    
+    return False
+
+  def iterate_by_row(self, df, index, profile_dict, contract_dict, cod, session):
+    for columns in range(47, len(df.columns), 7):
+        
+        print(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'), "  //  ", pandas_processement.get_cell_content(df, 0, columns))
+
+        month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
+        payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
+
+        payment_id = self.PaymentRepository.insert_one(payment_dict, session)
+        contract_id = self.ContractRepository.get_last_id()
+
+        entry_dict = pandas_processement.create_entry_dict(
+            index, df, cod, month_year, payment_id, contract_id, 
+            columns + 1, 
+            columns, 
+            columns + 2, 
+            columns + 3, 
+            columns + 4, 
+            columns + 5, 
+            columns + 6
+        )
+
+        self.EntriesRepository.insert_one(entry_dict, session)
+
+  def insert_contracts(self, csv):
+    content = self.validate_csv_file(csv)
+
+    if not content:
+        logger.info("Missing file or in a invalid form.")
+        raise ValueError("Invalid CSV file")
+    logger.info("File sent on request is valid.")
+    df = pd.read_csv(StringIO(content))
+
+    for index, row in df.iterrows():
+        with app.dbClient.start_session() as session:
+            with session.start_transaction():
+                try:
+                    readyStart = index >= 2
+                    if not readyStart:
+                        continue      
+                    
+                    is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
+                    is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+
+                    if not is_code_null and not is_name_null:
+                        cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
+                        if not cod_exists:
+                            profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
+                            profile_id = self.ProfileRepository.insert_one(profile_dict, session)
+                            profile_id = profile_id.inserted_id
+
+                            contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
+                            self.ContractRepository.insert_one(contract_dict, session)
+                            
+                            self.iterate_by_row(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'), session)
+                            
+                    if is_code_null and not is_name_null:
+                        new_cod = formatting.generate_code(df, index)
+                        while self.cod_already_exists(new_cod):
+                            new_cod = formatting.get_next_sequence(new_cod)
+
+                        cod_exists = self.cod_already_exists(new_cod)
+                        if not cod_exists:
+                            profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                            self.ProfileRepository.insert_one(profile_dict, session)
+                            profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
+
+                            contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
+                            self.ContractRepository.insert_one(contract_dict, session)
+
+                            self.iterate_by_row(df, index, profile_dict, contract_dict, new_cod, session)
+
+                except Exception as e:
+                      raise

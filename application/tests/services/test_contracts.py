@@ -26,8 +26,12 @@ def app_context(app):
 def service(app_context):
     zeevClient = Mock()
     processedRequestRepository = Mock()
+    profileRepository = Mock()
+    extractRepository = Mock()
+    paymentRepository = Mock()
+    contractRepository = Mock()
     clickSignClient = Mock()
-    contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient)
+    contractService = ContractsService(zeevClient, processedRequestRepository, clickSignClient, profileRepository, extractRepository, paymentRepository, contractRepository)
     return contractService, zeevClient, processedRequestRepository, clickSignClient
 
 def test_should_process_sucess_grow_contract(service, mocker):
@@ -111,6 +115,7 @@ def test_should_process_sucess_wealth_contract(service, mocker):
     combined_args = {**dict(enumerate(args)), **kwargs}
 
     implatationValue = combined_args[0].get('Valor da Implantação', 'Argument not found')
+    
     paymentDate = combined_args[0].get('Data do Pagamento da Implantação', 'Argument not found')
     paymentMethod = combined_args[0].get('Forma de Pagamento da Implantação', 'Argument not found')
     
@@ -118,7 +123,6 @@ def test_should_process_sucess_wealth_contract(service, mocker):
     assert implatationValue == '400,00'
     assert paymentDate == '08/05/2024'
     assert paymentMethod == 'PIX'
-    
     
     spyInsert.assert_called_once_with(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
     assert spyInsert.call_args == call(requestId, 'Wealth', [{ 'type': 'Wealth', 'id': 1 }])
@@ -159,14 +163,12 @@ def test_should_process_sucess_grow_and_wealth_contract_with_correct_variables(s
     contractService.processAllContracts()
     args, kwargs = spyClickSignClientPostWealth.call_args
     combined_args = {**dict(enumerate(args)), **kwargs}
-    
     implatationValue = combined_args[0].get('Valor da Implantação', 'Argument not found')
     paymentDate = combined_args[0].get('Data do Pagamento da Implantação', 'Argument not found')
     paymentMethod = combined_args[0].get('Forma de Pagamento da Implantação', 'Argument not found')
       
     assert spyClickSignClientPostWealth.call_count == 1
     assert implatationValue == '0,00'
-    
     assert paymentDate == ' '
     assert paymentMethod == ' '
   
