@@ -8,3 +8,5 @@ pymongo
 python-dotenv
 requests
 waitress
+pandas
+freezegun
