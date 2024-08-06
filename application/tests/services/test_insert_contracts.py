@@ -47,6 +47,7 @@ def app():
     app = Flask(__name__)
     app.config['PHONE_NUMBER_DEBUG'] = '123456789'
     app.config['CONTRACTS_PROCESSING_DAYS_INTERVAL'] = 5
+    app.dbClient = MagicMock()
     return app
 
 @pytest.fixture
@@ -55,22 +56,22 @@ def app_context(app):
         yield
 
 @pytest.fixture
-def service(app_context):
+def service(app_context, mocker):
     zeevClient = Mock()
     processedRequestRepository = Mock()
-    profileRepository = Mock()
-    profileRepository.insert_profile_document.return_value = Mock(inserted_id=1)
-    extractRepository = Mock()
-    paymentRepository = Mock()
-    paymentRepository.get_last_id.return_value = "1234"
-    contractRepository = Mock()
+    ProfileRepository = Mock()
+    ProfileRepository.insert_one.return_value = Mock(inserted_id=1)
+    EntriesRepository = Mock()
+    PaymentRepository = Mock()
+    PaymentRepository.get_last_id.return_value = "1234"
+    ContractRepository = Mock()
     clickSignClient = Mock()
     contractService = ContractsService(
         zeevClient, processedRequestRepository, clickSignClient, 
-        profileRepository, extractRepository, paymentRepository, 
-        contractRepository
+        ProfileRepository, EntriesRepository, PaymentRepository, 
+        ContractRepository
     )
-    return contractService, profileRepository, extractRepository, paymentRepository, contractRepository
+    return contractService, ProfileRepository, EntriesRepository, PaymentRepository, ContractRepository
 
 def convert_to_utc_date(date_string):
     date_format = "%d/%m/%Y"
@@ -78,27 +79,33 @@ def convert_to_utc_date(date_string):
     local_date = local_date.replace(tzinfo=pytz.UTC)
     return local_date
 
+def is_utc(date):
+    return date.tzinfo is not None and date.tzinfo.utcoffset(date) == timezone.utc.utcoffset(date)
+
 @freeze_time("2023-01-01")
-def test_should_read_and_insert_data_correctly(mocker, service):
-    contractsService, profileRepository, extractRepository, paymentRepository, contractRepository = service
+def test_should_read_and_insert_data_correctly(mocker, service, app):
+    contractsService, ProfileRepository, EntriesRepository, PaymentRepository, ContractRepository = service
 
     assert contractsService is not None, "contractsService is not initialized"
-    assert profileRepository is not None, "profileRepository is not initialized"
-    assert extractRepository is not None, "extractRepository is not initialized"
-    assert paymentRepository is not None, "paymentRepository is not initialized"
-    assert contractRepository is not None, "contractRepository is not initialized"
+    assert ProfileRepository is not None, "ProfileRepository is not initialized"
+    assert EntriesRepository is not None, "EntriesRepository is not initialized"
+    assert PaymentRepository is not None, "PaymentRepository is not initialized"
+    assert ContractRepository is not None, "ContractRepository is not initialized"
 
     response = create_response_with_csv()
-    spyInsertProfile = mocker.spy(profileRepository, 'insert_profile_document')
-    spyInsertExtract = mocker.spy(extractRepository, 'insert_extract_document')
-    spyInsertPayment = mocker.spy(paymentRepository, 'insert_payment_document')
-    spyInsertContract = mocker.spy(contractRepository, 'insert_contract_document')
 
-    contractRepository.cod_already_exists = MagicMock(return_value=False)
+    spyInsertProfile = mocker.spy(ProfileRepository, 'insert_one')
+    spyInsertEntry = mocker.spy(EntriesRepository, 'insert_one')
+    spyInsertPayment = mocker.spy(PaymentRepository, 'insert_one')
+    spyInsertContract = mocker.spy(ContractRepository, 'insert_one')
+
+    session_mock = app.dbClient.start_session().__enter__()
+
+    contractsService.cod_already_exists = MagicMock(return_value=False)
 
     contractsService.insert_contracts(response)
 
-    assert spyInsertProfile.call_args == call(
+    expected_profile_call = call(
         {
             'name': 'IZA CHOZE', 
             'email': 'I.CHOZE@HOTMAIL.COM', 
@@ -122,14 +129,16 @@ def test_should_read_and_insert_data_correctly(mocker, service):
             'consenting.birthdate': '-', 
             'consenting.phone': '-', 
             'consenting.cpfCnpj': '-'
-        }
+        },
+        session_mock
     )
-    
+
+    assert spyInsertProfile.call_args == expected_profile_call
     assert spyInsertProfile.call_count == 1
 
-    assert spyInsertContract.call_args == call(
+    expected_contract_call = call(
         {   
-            "cod": 110001.0,
+            "code": 110001.0,
             "closer": "MAURÍCIO VONO",
             "profileId": 1,
             "status": "DESCONHECIDO",
@@ -147,38 +156,44 @@ def test_should_read_and_insert_data_correctly(mocker, service):
             "rootContractCode": 0.0,
             "accountNumber.cpf": "35520574120",
             'sourceAcquisition': 1,
-        }
+        },
+        session_mock
     )
+
+    assert spyInsertContract.call_args == expected_contract_call
     assert spyInsertContract.call_count == 1
 
-    print(spyInsertPayment.call_args)
     fake_datetime = FakeDatetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc)
-    assert spyInsertPayment.call_args == call(
+    
+    expected_payment_call = call(
         {   
-            "cod": 110001.0,
+            "code": 110001.0,
             "payer.name": "IZA CHOZE",
             "payer.CPFCNPJ": "35520574120",
             "value": 500.0,
-            "dueDate": formatting.convert_to_utc_date("05/12/2025"),
+            "dueDate": "05/12/2025",
             "status": "INATIVO",
             "currency": "BRL",
-            "createdAt": fake_datetime, 
+            "createdAt": fake_datetime,
             "paymentMethod": "CARTÃO"
-        }
+        },
+        session_mock
     )
+    
+    assert spyInsertPayment.call_args == expected_payment_call
     assert spyInsertPayment.call_count == 96
 
-    assert spyInsertExtract.call_args == call(
+    expected_entry_call = call(
         {   
             'paymentId': "1234",
-            "cod": 110001.0,
+            "code": 110001.0,
             "payer.name": "IZA CHOZE",
             "payer.CNPJCPF": "35520574120",
             "planners.name": "DESCONHECIDO",
             "aum.estimated": 0.0,
             "aum.actual": 0.0,
             "mrr": 0.0,
-            "dueDate": "05/12/2025",
+            "dueDate": convert_to_utc_date("05/12/2025"),
             "paymentDate": "05/12/2025",
             "value": 500.0,
             "implementedPayment": 0.0,
@@ -188,6 +203,21 @@ def test_should_read_and_insert_data_correctly(mocker, service):
             "paymentMethod": "CARTÃO",
             "income": 0.0,
             "budgetProfile": "",
-        }
+        },
+        session_mock
     )
-    assert spyInsertExtract.call_count == 96
+    
+    assert spyInsertEntry.call_args == expected_entry_call
+    assert spyInsertEntry.call_count == 96
+
+    profile_data = spyInsertProfile.call_args[0][0]
+    assert is_utc(profile_data['birthdate']), "Birthdate should be in UTC format"
+
+    contract_data = spyInsertContract.call_args[0][0]
+    assert is_utc(contract_data['firstPaymentDate']), "FirstPaymentDate should be in UTC format"
+
+    payment_data = spyInsertPayment.call_args[0][0]
+    assert is_utc(payment_data['createdAt']), "CreatedAt should be in UTC format"
+
+    entry_data = spyInsertEntry.call_args[0][0]
+    assert is_utc(entry_data['createdAt']), "CreatedAt should be in UTC format"
