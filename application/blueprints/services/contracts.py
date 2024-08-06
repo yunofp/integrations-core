@@ -56,7 +56,10 @@ class ContractsService:
       contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
       
       implantationValue = '0,00'
-      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues, implantationValue)
+      paymentDate = ' '
+      paymentMethod = ' '
+
+      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues, implantationValue, paymentDate, paymentMethod)
       documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
       newEnvelope = self.clickSignClient.createEnvelope(str(requestId) + 'Wealth')
       newEnvelopeId = newEnvelope.get('data', {}).get('id')

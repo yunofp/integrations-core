@@ -33,15 +33,16 @@ def defineVariablesGrow(contractValues):
     }
     return clickSignVariables
 
-def defineVariablesWealth(contractValues, implantationValue = None):
-    
+def defineVariablesWealth(contractValues, implantationValue = None, paymentDate = None, paymentMethod = None):
     clickSignVariablesGrow = defineVariablesGrow(contractValues)
     clickSignVariablesWealth = {
         "Cobrança pela Corretora": findByName(contractValues, "autorizacaoDeCobrancaPelaCorretora"),
         "Patrimônio Financeiro Estimado": findByName(contractValues, "patrimonioFinanceiro"),
         "Vincular à contrato pai?": findByName(contractValues, "haveraVinculacaoContratoPai"),
         "Número do Contrato Pai": findByName(contractValues, "numeroDoContratoPai"),
-        "Valor da Implantação": implantationValue if implantationValue is not None else findByName(contractValues, "valorDeImplantacao")
+        "Valor da Implantação": implantationValue if implantationValue is not None else findByName(contractValues, "valorDeImplantacao"),
+        "Data do Pagamento da Implantação": paymentDate if paymentDate is not None else findByName(contractValues, "dataDoPagamentoDaImplantacao"),
+        "Forma de Pagamento da Implantação": paymentMethod if paymentMethod is not None else findByName(contractValues, "formaDePagamentoDaImplantacao"),
     }
     
     clickSignVariables = {**clickSignVariablesGrow, **clickSignVariablesWealth}
