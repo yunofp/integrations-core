@@ -1,0 +1,2 @@
+[default]
+MONGO_DATABASE_URI='mongodb://INTEGRATIONS_CORE:INTEGRATIONS_CORE@localhost:27018/test?authSource=admin'

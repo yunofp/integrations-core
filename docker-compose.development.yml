@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  mongo-test:
+    image: mongo:latest
+    container_name: mongo_integrations_core
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: INTEGRATIONS_CORE
+      MONGO_INITDB_ROOT_PASSWORD: INTEGRATIONS_CORE
+    volumes:
+      - mongo_integrations_core_data:/data/db
+
+volumes:
+  mongo_integrations_core_data:
