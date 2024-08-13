@@ -13,7 +13,13 @@ import time
 
 logger = logging.getLogger(__name__)
 class ContractsService:
-  def __init__(self, zeevClient, processedRequestRepository, clickSignClient, ProfileRepository, EntriesRepository, PaymentRepository, ContractRepository):
+  def __init__(self, zeevClient = None,
+               processedRequestRepository = None,
+               clickSignClient = None,
+               ProfileRepository = None,
+               EntriesRepository = None,
+               PaymentRepository = None,
+               ContractRepository = None):
     self.zeevClient = zeevClient
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
@@ -440,3 +446,11 @@ class ContractsService:
 
                 except Exception as e:
                       raise
+                    
+  def get_new_business_values(self):
+    
+    
+    print("getting new business values")
+    
+                     
+  

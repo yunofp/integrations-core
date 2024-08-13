@@ -13,3 +13,5 @@ __pycache__/
 *.cache
 
 settings.toml
+mongodb-keyfile
+.DS_Store

@@ -69,3 +69,10 @@ class ContractsResourceInput(Resource):
     response = self.service.insert_contracts(csv)
 
     return jsonify({'message': response})
+  
+class NewBusinessResource(Resource):
+  def get(self):
+    
+    self.service = ContractsService(None,None,None,None,None,None,None)
+    self.service.get_new_business_values()
+    return jsonify({'message': 'New business accepted'})
