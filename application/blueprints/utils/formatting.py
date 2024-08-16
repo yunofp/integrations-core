@@ -7,8 +7,11 @@ def convert_to_utc_date(date_str):
     if not date_str or date_str == "-":
         return date_str
     
+    br_tz = pytz.timezone('America/Sao_Paulo')
     date = datetime.strptime(date_str, "%d/%m/%Y")
-    date_utc = date.replace(tzinfo=pytz.UTC)
+    date_br = br_tz.localize(date)
+    date_utc = date_br.astimezone(pytz.UTC)
+    
     return date_utc
 
 def formatCpf(num):

@@ -4,7 +4,12 @@ import pandas as pd
 from datetime import datetime, timezone
 
 def get_cell_content(df, row, column):
-    return df.iloc[row][column]
+    if isinstance(column, str):
+        return df.loc[row, column]
+    else:
+        return df.iloc[row, column]
+
+
 
 def verify_work_contract(df, index):
     contract = get_cell_content(df, index, 'Contrato')
@@ -35,40 +40,44 @@ def add_source_acquisition(source_acquisition_type):
 
 def create_contract_dict(index, code, df, profile_id):
     contracts = {}
-    debt_day = get_cell_content(df, index, 27)
+    debt_day = 0 if pd.isnull(get_cell_content(df, index, 'Cobrança Mensal no Dia')) else int(get_cell_content(df, index, 'Cobrança Mensal no Dia'))
 
     contracts["code"] = code
     contracts["closer"] = get_cell_content(df, index, 'Closer')
-    contracts["profileId"] = profile_id
+    contracts["profile_id"] = profile_id
+    contracts['source_acquisition'] = add_source_acquisition(get_cell_content(df, index, 'Canal de Aquisição'))
+    contracts['status'] = "A definir" if pd.isnull(get_cell_content(df, index, 1)) else get_cell_content(df, index, 1)
+    contracts["type"] = get_cell_content(df, index, 'Contrato')
 
-    contracts['status'] = "DESCONHECIDO" if pd.isnull(get_cell_content(df, index, 1)) else get_cell_content(df, index, 1)
-    contracts["contractType"] = get_cell_content(df, index, 'Contrato')
-
-    contracts["aum.estimated"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 34))
-    contracts["aum.actual"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 34))
-    contracts["implantation"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 26))
-    contracts["firstPaymentDate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data do Primeiro Pagamento da Implantação'))
-    contracts["implantationPaymentMethod"] = get_cell_content(df, index, 'Forma de Pagamento do FEE')
-    contracts["implantationInstallment"] = int(get_cell_content(df, index, 'Parcelamento da Implantação'))
-    contracts["minimalFee"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 29))
+    contracts["aum"] = {
+        "estimated" : formatting.extract_numbers_as_double(get_cell_content(df, index, 'AUM Estimado')),
+        "actual" : formatting.extract_numbers_as_double(get_cell_content(df, index, 'AUM Estimado'))
+    }
+    contracts["implantation"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 'Implantação'))
+    contracts["first_implantation_payment_date"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data do Primeiro Pagamento da Implantação'))
+    contracts["first_payment_date"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data do Primeiro Pagamento da Implantação'))
+    contracts["implantation_payment_method"] = get_cell_content(df, index, 'Forma de Pagamento do FEE')
+    contracts["implantation_installment"] = int(get_cell_content(df, index, 'Parcelamento da Implantação'))
+    contracts["minimal_fee"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 'Fee Mínimo'))
     contracts["deadline"] = get_cell_content(df, index, 'Vigência (meses)')
-    contracts["debtDay"] = debt_day[:2]
+    contracts["debt_day"] = debt_day
     if get_cell_content(df, index, 'Autorização de Cobrança Pela Corretora') == "NÃO": 
-        contracts["brokerPermission"] = False
+        contracts["broker_permission"] = False
     else:
-        contracts["brokerPermission"] = True
+        contracts["broker_permission"] = True
     
-    contracts["rootContractCode"] = "" if get_cell_content(df, index, 'Vinculação Contrato Pai') == "0" else get_cell_content(df, index, 'Vinculação Contrato Pai')
-    contracts["accountNumber.cpf"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
-    contracts['sourceAcquisition'] = add_source_acquisition(get_cell_content(df, index, 'Canal de Aquisição'))
-
+    contracts["root_contract_code"] = "" if get_cell_content(df, index, 'Vinculação Contrato Pai') == "0" else get_cell_content(df, index, 'Vinculação Contrato Pai')
+    contracts["account"] = {
+        "number": 0 if pd.isnull(get_cell_content(df, index, 43)) else get_cell_content(df, index, 43),
+        "cpf_cnpj": formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
+    }
     return contracts
 
 def create_profile_dict(index, df, code):
     maritalStatus = verify_work_contract(df, index)
     profile = {}
     profile["name"] = get_cell_content(df, index, 'Nome do Cliente')
-    profile["email"] = get_cell_content(df, index, 6)
+    profile["email"] = get_cell_content(df, index, 'Email')
     profile["birthdate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data de Nascimento'))
     profile["phone"] = formatting.clean_numbers(get_cell_content(df, index, 'Telefone'))
     profile["cpf_cnpj"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
@@ -88,8 +97,8 @@ def create_profile_dict(index, df, code):
         "name": get_cell_content(df, index, 'Nome do Cônjuge/Responsável da Empresa'),
         "email": get_cell_content(df, index, 'Email Anuente'),
         "birthdate": formatting.convert_to_utc_date(get_cell_content(df, index, 'Data de Nascimento do Anuente')),
-        "phone": get_cell_content(df, index, 'Telefone do Anuente'),
-        "cpf": get_cell_content(df, index, 'CPF do Anuente')
+        "phone": formatting.clean_numbers(get_cell_content(df, index, 'Telefone do Anuente')),
+        "cpf": formatting.clear_cpf(get_cell_content(df, index, 'CPF do Anuente'))
     }
 
     return profile
