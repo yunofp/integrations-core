@@ -11,6 +11,7 @@ import pytz
 from . import pandas_processement
 import time
 import sys
+from bson.objectid import ObjectId
 
 logger = logging.getLogger(__name__)
 class ContractsService:
@@ -471,24 +472,40 @@ class ContractsService:
                 contract_id = self.ContractRepository.insert_one(contract_dict, session)
 
                 self.iterate_by_row(df, index, contract_id, new_cod, session)
-  def calculate_mrr_by_year_group_by_month(self, year) -> list:
+
+
+  def calculate_mrr_by_year_group_by_month(self, year, type) -> dict:
     if not year:
-      return [Exception ("year not defined"), 0]
+        return {"error": "year not defined", "result": 0}
+
+    months_list = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
     
-    entries_data_frame = self.entriesRepository.find_many_data_frame(year)
-    entries_data_frame['data'] = pd.to_datetime(entries_data_frame['paymentDate'], format='%d/%m/%Y')
-    entries_data_frame['ano'] = entries_data_frame['data'].dt.year
-    entries_data_frame['mes'] = entries_data_frame['data'].dt.month
-    agrupado_por_ano_e_mes = entries_data_frame.groupby(['ano', 'mes'])['value'].sum()
-    return [None, agrupado_por_ano_e_mes]
+    contracts_ids = self.ContractRepository.find_many_by_type(type, only_ids=True)
+    contracts_ids_objects_id = [ObjectId(item['_id']) for item in contracts_ids]
+  
+    entries = self.entriesRepository.find_many_by_year_by_contracts_ids(year, contracts_ids_objects_id)
+    entries_data_frame = pd.DataFrame(entries)
     
-  def get_new_business_values(self):
-    print("getting new business values")
-    [error, result] = self.calculate_mrr_by_year_group_by_month(2021)
-    if(error):
-      raise error
+    if entries_data_frame.empty:
+        return {month: 0 for month in months_list}
     
-    # print(agrupado_por_ano_e_mes)
+    entries_data_frame['payment_date'] = pd.to_datetime(entries_data_frame['payment_date'])
+    entries_data_frame['month'] = entries_data_frame['payment_date'].dt.strftime('%b').str.upper()
+    print(entries_data_frame['payment_date'].dt.strftime('%b').str.upper())
+    entries_data_frame['month'] = pd.Categorical(entries_data_frame['month'], categories=months_list, ordered=True)
+
+    months_mrr = entries_data_frame.groupby('month')['value'].sum().reindex(months_list, fill_value=0).to_dict()
+    return months_mrr
+
+
+  def get_new_business_values(self, year=None, type='GROW') -> dict:
+    if not year:
+        return {"error": "year not defined", "result": {}}
+    
+    new_business = {year: {}}    
+    new_business[year]["MRR"] = self.calculate_mrr_by_year_group_by_month(year, type)
+    return new_business
     
     
     

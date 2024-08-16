@@ -17,15 +17,17 @@ class EntriesRepository:
     def insert_many(self, entries, mdb_session):
         self.collection.insert_many(entries, session = mdb_session)
         
-    def find_many_data_frame_by_year(self, year):
+    def find_many_by_year_by_contracts_ids(self, year, contracts_ids):
         start_date = datetime(year, 1, 1)
         end_date = datetime(year + 1, 1, 1)
         
-        result = self.collection.find({'created_at': {
+        entries = self.collection.find({
+        'payment_date': {
             '$gte': start_date,
             '$lt': end_date
+        },
+        'contract_id': {
+            '$in': contracts_ids
         }})
-        
-        df = pd.DataFrame(list(result))
-        return df
+        return list(entries)
     

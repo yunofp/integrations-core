@@ -21,6 +21,12 @@ class ContractsRepository:
         if only_id:
             return self.collection.find_one({"code": code}, projection={'_id': 1})
         return self.collection.find_one({"code": code})
+    
+    def find_many_by_type(self, type, only_ids = False):
+        if only_ids:
+            contracts = self.collection.find({"type": type}, projection={'_id': 1})
+            return list(contracts)
+        return list(self.collection.find({"type": type}))
 
 
     

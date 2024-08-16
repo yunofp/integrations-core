@@ -5,6 +5,9 @@ import threading
 from ..services.contracts import ContractsService
 from ..clients import clicksignClient, zeevClient
 from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository
+import logging
+
+logger = logging.getLogger(__name__)
 class RestApiResource(Resource):
   def get(self):
     return jsonify({'message': '> Api is alive! <'})
@@ -68,7 +71,17 @@ class ContractsResourceInput(Resource):
   
 class NewBusinessResource(Resource):
   def get(self):
+    
+    year = request.args.get('year', default=None, type=int)
+    contract_type = request.args.get('contract_type', default=None, type=str)
+    if not year:
+      return jsonify({"error": "Year is required"}), 400
+    if not contract_type:
+      return jsonify({"error": "Contract type is required"}), 400
+    
     self.entriesRepository = entriesRepository.EntriesRepository()
-    self.service = ContractsService(None,None,None,None,self.entriesRepository,None,None)
-    result = self.service.get_new_business_values()
-    return jsonify({})
+    self.contractsRepository = contractsRepository.ContractsRepository()
+    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository)
+    new_business = self.service.get_new_business_values(year, contract_type)
+    
+    return jsonify(new_business)
