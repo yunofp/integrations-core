@@ -4,7 +4,7 @@ import json
 import threading
 from ..services.contracts import ContractsService
 from ..clients import clicksignClient, zeevClient
-from ..repositories import contractsRepository, entriesRepository, paymentsRepository, processedRequestRepository, profileRepository
+from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository
 class RestApiResource(Resource):
   def get(self):
     return jsonify({'message': '> Api is alive! <'})
@@ -18,10 +18,9 @@ class ContractsResource(Resource):
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
     self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
     self.profileRepository = profileRepository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
+    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepositor, self.contractsRepository)
 
     thread = threading.Thread(target=self.service.processAllContracts)
     thread.start()
@@ -34,10 +33,9 @@ class ContractsResourceRetry(Resource):
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
     self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
     self.profileRepository = profileRepository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
+    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.contractsRepository)
     result = self.service.listManyRetries()
     return json.dumps(result, default=str)
 
@@ -47,10 +45,9 @@ class ContractsResourceRetry(Resource):
     self.clicksignClient = clicksignClient.ClicksignClient()
     self.processedRequestRepository = processedRequestRepository.ProcessedRequestsRepository()
     self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
     self.profileRepository = profileRepository.ProfileRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
+    self.service = ContractsService(self.zeevClient, self.processedRequestRepository, self.clicksignClient, self.profileRepository, self.entriesRepository, self.contractsRepository)
     
     thread = threading.Thread(target=self.service.runTryAgain)
     thread.start()
@@ -62,9 +59,8 @@ class ContractsResourceInput(Resource):
     csv = request
     self.profileRepository = profileRepository.ProfileRepository()
     self.entriesRepository = entriesRepository.EntriesRepository()
-    self.paymentsRepository = paymentsRepository.PaymentsRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.paymentsRepository, self.contractsRepository)
+    self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.contractsRepository)
 
     response = self.service.insert_contracts(csv)
 
@@ -72,7 +68,7 @@ class ContractsResourceInput(Resource):
   
 class NewBusinessResource(Resource):
   def get(self):
-    
-    self.service = ContractsService(None,None,None,None,None,None,None)
-    self.service.get_new_business_values()
-    return jsonify({'message': 'New business accepted'})
+    self.entriesRepository = entriesRepository.EntriesRepository()
+    self.service = ContractsService(None,None,None,None,self.entriesRepository,None,None)
+    result = self.service.get_new_business_values()
+    return jsonify({})

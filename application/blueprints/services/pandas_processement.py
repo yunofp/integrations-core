@@ -1,3 +1,4 @@
+import sys
 from ..utils import formatting
 import pandas as pd
 from datetime import datetime, timezone
@@ -46,7 +47,7 @@ def create_contract_dict(index, code, df, profile_id):
     contracts["aum.estimated"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 34))
     contracts["aum.actual"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 34))
     contracts["implantation"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 26))
-    contracts["firstPaymentDate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 27))
+    contracts["firstPaymentDate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data do Primeiro Pagamento da Implantação'))
     contracts["implantationPaymentMethod"] = get_cell_content(df, index, 'Forma de Pagamento do FEE')
     contracts["implantationInstallment"] = int(get_cell_content(df, index, 'Parcelamento da Implantação'))
     contracts["minimalFee"] = formatting.extract_numbers_as_double(get_cell_content(df, index, 29))
@@ -63,21 +64,6 @@ def create_contract_dict(index, code, df, profile_id):
 
     return contracts
 
-def create_payment_dict(index, df, mmaaaa, profile_dict, contract_dict, status):
-    dueDate = get_cell_content(df, index, 27)
-    payments = {}
-    payments["code"] = contract_dict['code']
-    payments["payer.name"] = get_cell_content(df, index, 'Nome do Cliente')
-    payments["payer.CPFCNPJ"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
-    payments["value"] = contract_dict['minimalFee']
-    payments["dueDate"] = dueDate[:2] + "/" + mmaaaa
-    payments["status"] = get_cell_content(df, index, status)
-    payments["currency"] = "BRL"
-    payments["createdAt"] = datetime.now(timezone.utc)
-    payments["paymentMethod"] = get_cell_content(df, index, 'Forma de Pagamento do FEE')
-
-    return payments
-
 def create_profile_dict(index, df, code):
     maritalStatus = verify_work_contract(df, index)
     profile = {}
@@ -85,50 +71,58 @@ def create_profile_dict(index, df, code):
     profile["email"] = get_cell_content(df, index, 6)
     profile["birthdate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 'Data de Nascimento'))
     profile["phone"] = formatting.clean_numbers(get_cell_content(df, index, 'Telefone'))
-    profile["cpfcnpj"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
-    profile["jobPosition"] = ""
+    profile["cpf_cnpj"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
+    profile["job_position"] = ""
     profile["address"] = get_cell_content(df, index, 'Endereço')
     profile["neighborhood"] = get_cell_content(df, index, 'Bairro')
-    profile["zipCode"] = formatting.clean_numbers(get_cell_content(df, index, 'CEP'))
+    profile["zip_code"] = formatting.clean_numbers(get_cell_content(df, index, 'CEP'))
     profile["city"] = get_cell_content(df, index, 'Cidade')
     profile["state"] = get_cell_content(df, index, 'UF')
-    profile["financialAssets"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, 34))
-    profile["budgetProfile"] = "" if pd.isna(get_cell_content(df, index, 39)) else get_cell_content(df, index, 39)
-    profile["residenceProperty"] = ""
-    profile["maritalStatus"] = maritalStatus
-    profile["primaryProfession"] = ""
-    profile["businessSector"] = ""
-    profile["consenting.name"] = get_cell_content(df, index, 'Nome do Cônjuge/Responsável da Empresa')
-    profile["consenting.email"] = get_cell_content(df, index, 17)
-    profile["consenting.birthdate"] = formatting.convert_to_utc_date(get_cell_content(df, index, 18))
-    profile["consenting.phone"] = get_cell_content(df, index, 19)
-    profile["consenting.cpfCnpj"] = get_cell_content(df, index, 20)
+    profile["financial_assets"] = 0.0
+    profile["budget_profile"] = "" 
+    profile["residence_property"] = ""
+    profile["marital_status"] = maritalStatus
+    profile["primary_profession"] = ""
+    profile["business_sector"] = ""
+    profile["consenting"] = {
+        "name": get_cell_content(df, index, 'Nome do Cônjuge/Responsável da Empresa'),
+        "email": get_cell_content(df, index, 'Email Anuente'),
+        "birthdate": formatting.convert_to_utc_date(get_cell_content(df, index, 'Data de Nascimento do Anuente')),
+        "phone": get_cell_content(df, index, 'Telefone do Anuente'),
+        "cpf": get_cell_content(df, index, 'CPF do Anuente')
+    }
 
     return profile
 
-def create_entry_dict(index, df, code, mmaaaa, paymentId, contractId, aum_pos, mrr_pos, planner_name_pos, status_pos, imp_payment_pos, paid_mrr_pos, cancel_day_pos):
+def create_entry_dict(month_year,index, df, code, month_year_index, contract_id, aum_index, mrr_index, planner_name_index, status_index, imp_payment_index, paid_mrr_index, cancel_day_index):
     entry = {}
-    payDate = get_cell_content(df, index, 27)
-    dueDate = get_cell_content(df, index, 27)
-    entry["paymentId"] = paymentId
+    pay_date = formatting.convert_to_utc_date(formatting.format_date(month_year))
+    due_date = pay_date
+    value = formatting.clean_currency_string_to_double(get_cell_content(df, index, paid_mrr_index))
+    entry["contract_id"] = contract_id
     entry["code"] = code
-    entry["payer.name"] = get_cell_content(df, index, 'Nome do Cliente')
-    entry["payer.CNPJCPF"] = formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
-    entry["planners.name"] = "DESCONHECIDO" if get_cell_content(df, index, planner_name_pos) == "INATIVO" else get_cell_content(df, index, planner_name_pos)
-    entry["aum.estimated"] = formatting.processing_number_insert(get_cell_content(df, index, aum_pos))
-    entry["aum.actual"] = formatting.processing_number_insert(get_cell_content(df, index, aum_pos))
-    entry["mrr"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, mrr_pos))
-    entry["dueDate"] = formatting.convert_to_utc_date(dueDate[:2] + "/" + mmaaaa) if payDate != "-" else "01" + "/" + mmaaaa
-    entry["paymentDate"] = payDate[:2] + "/" + mmaaaa
-    entry["value"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, 29))
-    entry["implementedPayment"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, imp_payment_pos))
-    entry["status"] = get_cell_content(df, index, status_pos)
+    entry["payer"] = {
+        "name": get_cell_content(df, index, 'Nome do Cliente'),
+        "cpf": formatting.clear_cpf(get_cell_content(df, index, 'CPF / CPNJ'))
+    }
+    planner_name = "DESCONHECIDO" if get_cell_content(df, index, planner_name_index) == "INATIVO" else get_cell_content(df, index, planner_name_index)
+    entry["planners"] = [{"name": planner_name}]
+    entry["aum"] = {
+        "estimated": formatting.processing_number_insert(get_cell_content(df, index, "AUM Estimado")),
+        "actual": formatting.processing_number_insert(get_cell_content(df, index, aum_index))
+    }
+    entry["due_date"] = due_date
+    entry["payment_date"] = pay_date 
+    entry["value"] = value
+    entry["implemented_payment"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, imp_payment_index))
+    entry["status"] = "approved" if value > 0 else "pending"
     entry["currency"] = "BRL"
-    entry["createdAt"] = datetime.now(timezone.utc)
-    entry["paymentMethod"] = get_cell_content(df, index, 30)
-    entry["income"] = formatting.clean_currency_string_to_double(get_cell_content(df, index, 38))
-    entry["budgetProfile"] = "" if pd.isna(get_cell_content(df, index, 39)) else get_cell_content(df, index, 39)
-    if not get_cell_content(df, index, cancel_day_pos) == "INATIVO":
-        entry["cancelDay"] = get_cell_content(df, index, cancel_day_pos)
-
+    entry["created_at"] = datetime.now(timezone.utc)
+    entry["payment_method"] = get_cell_content(df, index, "Forma de Pagamento do FEE")
+    entry["income"] = ""
+    entry["budget_profile"] = ""
+    cancel_day = get_cell_content(df, index, cancel_day_index)
+    entry["cancel_day"] = ""
+    if isinstance(cancel_day, str) and cancel_day.strip():
+        entry["cancel_day"] = cancel_day
     return entry

@@ -10,6 +10,7 @@ from flask import jsonify
 import pytz 
 from . import pandas_processement
 import time
+import sys
 
 logger = logging.getLogger(__name__)
 class ContractsService:
@@ -17,16 +18,14 @@ class ContractsService:
                processedRequestRepository = None,
                clickSignClient = None,
                ProfileRepository = None,
-               EntriesRepository = None,
-               PaymentRepository = None,
+               entriesRepository = None,
                ContractRepository = None):
     self.zeevClient = zeevClient
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
     self.config = app.config
     self.ProfileRepository = ProfileRepository
-    self.EntriesRepository = EntriesRepository
-    self.PaymentRepository = PaymentRepository
+    self.entriesRepository = entriesRepository
     self.ContractRepository = ContractRepository
 
   def listManyRetries(self):
@@ -372,29 +371,57 @@ class ContractsService:
     
     return False
 
-  def iterate_by_row(self, df, index, profile_dict, contract_dict, cod, session):
-    for columns in range(47, len(df.columns), 7):
-        
-        print(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'), "  //  ", pandas_processement.get_cell_content(df, 0, columns))
+  def iterate_by_row(self, df, index, contract_id, code, session):
+    total_columns = len(df.columns) 
+    start_column = 47 
+    step = 7   
+    entries = []
+    for column_index in range(start_column, total_columns, step):
+      paid_mrr_index = column_index + 6
 
-        month_year = formatting.get_mmaaaa(pandas_processement.get_cell_content(df, 0, columns))
-        payment_dict = pandas_processement.create_payment_dict(index, df, month_year, profile_dict, contract_dict, columns + 3)
+      if paid_mrr_index >= total_columns:
+          continue
+      
+      mrr_paid_value = pandas_processement.get_cell_content(df, index, paid_mrr_index)
+      must__not_insert = mrr_paid_value == "INATIVO" or pd.isna(mrr_paid_value)
 
-        payment_id = self.PaymentRepository.insert_one(payment_dict, session)
-        contract_id = self.ContractRepository.get_last_id()
+      if must__not_insert:
+          continue
+      
+      month_year_index = column_index + 1
+      aum_index = column_index + 2
+      mrr_index = column_index + 1
+      planner_name_index = column_index + 3
+      implantation_payment_index = column_index + 5
+      cancel_day_index = column_index + 7
+      
+      if any(idx >= total_columns for idx in [
+          month_year_index, aum_index, mrr_index,
+          planner_name_index, implantation_payment_index,
+          cancel_day_index
+      ]):
+          continue
+      
+      month_year = pandas_processement.get_cell_content(df, 0, month_year_index)
 
-        entry_dict = pandas_processement.create_entry_dict(
-            index, df, cod, month_year, payment_id, contract_id, 
-            columns + 1, 
-            columns, 
-            columns + 2, 
-            columns + 3, 
-            columns + 4, 
-            columns + 5, 
-            columns + 6
-        )
-
-        self.EntriesRepository.insert_one(entry_dict, session)
+      entry_dict = pandas_processement.create_entry_dict(
+          month_year,
+          index,
+          df,
+          code,
+          month_year_index,
+          contract_id,
+          aum_index,
+          mrr_index,
+          planner_name_index,
+          None, 
+          implantation_payment_index,
+          paid_mrr_index,
+          cancel_day_index
+      )
+      entries.append(entry_dict)
+ 
+    self.entriesRepository.insert_many(entries, session)
 
   def insert_contracts(self, csv):
     content = self.validate_csv_file(csv)
@@ -407,50 +434,63 @@ class ContractsService:
 
     for index, row in df.iterrows():
         with app.dbClient.start_session() as session:
-            with session.start_transaction():
-                try:
-                    readyStart = index >= 2
-                    if not readyStart:
-                        continue      
+          with session.start_transaction():
+          
+            readyStart = index >= 2
+            if not readyStart:
+                continue      
+            
+            is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
+            is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+            # logger.info("insert_contracts | Inserting contract of: " + str(pandas_processement.get_cell_content(df, index, 'Nome do Cliente')) + " | " + str(index))
+            
+            if not is_code_null and not is_name_null:
+              cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
+              if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
+                profile_id = self.ProfileRepository.insert_one(profile_dict, session)
+                profile_id = profile_id.inserted_id
+
+                contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
+                contract_id = self.ContractRepository.insert_one(contract_dict, session)
+                
+                self.iterate_by_row(df, index, contract_id, pandas_processement.get_cell_content(df, index, 'COD'), session)
                     
-                    is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
-                    is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+            if is_code_null and not is_name_null:
+              new_cod = formatting.generate_code(df, index)
+              while self.cod_already_exists(new_cod):
+                new_cod = formatting.get_next_sequence(new_cod)
 
-                    if not is_code_null and not is_name_null:
-                        cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
-                        if not cod_exists:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
-                            profile_id = self.ProfileRepository.insert_one(profile_dict, session)
-                            profile_id = profile_id.inserted_id
+              cod_exists = self.cod_already_exists(new_cod)
+              if not cod_exists:
+                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                self.ProfileRepository.insert_one(profile_dict, session)
+                profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
 
-                            contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
-                            self.ContractRepository.insert_one(contract_dict, session)
-                            
-                            self.iterate_by_row(df, index, profile_dict, contract_dict, pandas_processement.get_cell_content(df, index, 'COD'), session)
-                            
-                    if is_code_null and not is_name_null:
-                        new_cod = formatting.generate_code(df, index)
-                        while self.cod_already_exists(new_cod):
-                            new_cod = formatting.get_next_sequence(new_cod)
+                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
+                contract_id = self.ContractRepository.insert_one(contract_dict, session)
 
-                        cod_exists = self.cod_already_exists(new_cod)
-                        if not cod_exists:
-                            profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                            self.ProfileRepository.insert_one(profile_dict, session)
-                            profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
-
-                            contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-                            self.ContractRepository.insert_one(contract_dict, session)
-
-                            self.iterate_by_row(df, index, profile_dict, contract_dict, new_cod, session)
-
-                except Exception as e:
-                      raise
-                    
+                self.iterate_by_row(df, index, contract_id, new_cod, session)
+  def calculate_mrr_by_year_group_by_month(self, year) -> list:
+    if not year:
+      return [Exception ("year not defined"), 0]
+    
+    entries_data_frame = self.entriesRepository.find_many_data_frame(year)
+    entries_data_frame['data'] = pd.to_datetime(entries_data_frame['paymentDate'], format='%d/%m/%Y')
+    entries_data_frame['ano'] = entries_data_frame['data'].dt.year
+    entries_data_frame['mes'] = entries_data_frame['data'].dt.month
+    agrupado_por_ano_e_mes = entries_data_frame.groupby(['ano', 'mes'])['value'].sum()
+    return [None, agrupado_por_ano_e_mes]
+    
   def get_new_business_values(self):
-    
-    
     print("getting new business values")
+    [error, result] = self.calculate_mrr_by_year_group_by_month(2021)
+    if(error):
+      raise error
+    
+    # print(agrupado_por_ano_e_mes)
+    
+    
     
                      
   

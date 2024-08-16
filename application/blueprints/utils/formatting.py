@@ -100,7 +100,7 @@ def processing_number_insert(value):
     else:
         return clean_currency_string_to_double(value)
     
-def get_mmaaaa(cell):
+def format_date(cell, day="01", format="yyyy-mm-dd"):
     cell = str(cell) 
     ftd = cell[:3].lower()
 
@@ -121,8 +121,8 @@ def get_mmaaaa(cell):
 
     if ftd in months:
         mm = months[ftd]
-        lfd = cell[-4:]
-        return f"{mm}/{lfd}"
+        year = cell[-4:]
+        return f"{day}/{mm}/{year}"
     else:
         raise "Invalid cell value!"
     
