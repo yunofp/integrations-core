@@ -1,4 +1,5 @@
 
+import io
 import logging
 import pandas as pd
 from io import StringIO
@@ -510,6 +511,33 @@ class ContractsService:
           return str(data)
       else:
           return data
+        
+  def save_new_business_to_csv(self, year=None, type='GROW', filename='new_business.csv'):
+    # Obter os dados de new_business
+    new_business = self.get_new_business_values(year, type)
+    
+    # Extrair os dados do dicionário para uma lista de dicionários
+    data = []
+    for year, metrics in new_business.items():
+        for metric_name, metric_data in metrics.items():
+            for month, value in metric_data['months'].items():
+                data.append({
+                    'Year': year,
+                    'Metric': metric_name,
+                    'Month': month,
+                    'Value': value,
+                    'Goal': metric_data['goal']['goal'],
+                    'Actual': metric_data['goal']['actual']
+                })
+    
+    # Converter a lista de dicionários em um DataFrame do pandas
+    df = pd.DataFrame(data)
+    
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+    
+    return buffer
 
   def get_new_business_values(self, year=None, type='GROW') -> dict:
     if not year:

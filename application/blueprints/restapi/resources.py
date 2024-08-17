@@ -1,4 +1,4 @@
-from flask import jsonify, abort, request
+from flask import jsonify, abort, request, Response
 from flask_restful import Resource
 import json
 import threading
@@ -74,15 +74,26 @@ class NewBusinessResource(Resource):
     
     year = request.args.get('year', default=None, type=int)
     contract_type = request.args.get('contract_type', default=None, type=str)
+    format = request.args.get('format', default=None, type=str)
     if not year:
       return jsonify({"error": "Year is required"}), 400
     if not contract_type:
       return jsonify({"error": "Contract type is required"}), 400
+    if not format:
+      return jsonify({"error": "Format is required"}), 400
     
     self.entriesRepository = entriesRepository.EntriesRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.goalsRepository = goal_repository.GoalRepository()
     self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository, self.goalsRepository)
-    new_business = self.service.get_new_business_values(year, contract_type)
     
-    return jsonify(new_business)
+    if format == 'json':
+      new_business = self.service.get_new_business_values(year, contract_type)
+      return jsonify(new_business)
+    
+    csv_buffer = self.service.save_new_business_to_csv(year, contract_type)
+    return Response(
+        csv_buffer,
+        mimetype='text/csv',
+        headers={"Content-Disposition": "attachment;filename=new_business.csv"}
+    )
