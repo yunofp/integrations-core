@@ -20,7 +20,8 @@ class ContractsService:
                clickSignClient = None,
                ProfileRepository = None,
                entriesRepository = None,
-               ContractRepository = None):
+               ContractRepository = None,
+               goalsRepository = None):
     self.zeevClient = zeevClient
     self.processedRequestRepository = processedRequestRepository
     self.clickSignClient = clickSignClient
@@ -28,6 +29,7 @@ class ContractsService:
     self.ProfileRepository = ProfileRepository
     self.entriesRepository = entriesRepository
     self.ContractRepository = ContractRepository
+    self.goalsRepository = goalsRepository
 
   def listManyRetries(self):
     try:
@@ -474,7 +476,7 @@ class ContractsService:
                 self.iterate_by_row(df, index, contract_id, new_cod, session)
 
 
-  def calculate_mrr_by_year_group_by_month(self, year, type) -> dict:
+  def calculate_mrr_by_year_group_by_month(self, year, type, goal) -> dict:
     if not year:
         return {"error": "year not defined", "result": 0}
 
@@ -488,7 +490,7 @@ class ContractsService:
     entries_data_frame = pd.DataFrame(entries)
     
     if entries_data_frame.empty:
-        return {month: 0 for month in months_list}
+        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
     
     entries_data_frame['payment_date'] = pd.to_datetime(entries_data_frame['payment_date'])
     entries_data_frame['month'] = entries_data_frame['payment_date'].dt.strftime('%b').str.upper()
@@ -496,15 +498,36 @@ class ContractsService:
     entries_data_frame['month'] = pd.Categorical(entries_data_frame['month'], categories=months_list, ordered=True)
 
     months_mrr = entries_data_frame.groupby('month')['value'].sum().reindex(months_list, fill_value=0).to_dict()
-    return months_mrr
+    
+    return months_mrr, {"goal": goal, "actual": entries_data_frame['value'].sum()}
 
+  def convert_object_id(self, data):
+      if isinstance(data, dict):
+          return {k: self.convert_object_id(v) for k, v in data.items()}
+      elif isinstance(data, list):
+          return [self.convert_object_id(i) for i in data]
+      elif isinstance(data, ObjectId):
+          return str(data)
+      else:
+          return data
 
   def get_new_business_values(self, year=None, type='GROW') -> dict:
     if not year:
         return {"error": "year not defined", "result": {}}
+
+    new_business = {year: {}} 
+    goals = self.goalsRepository.find_by_names(['MRR'])
+    mrr_goal = list(filter(lambda goal: goal['name'] == 'MRR', goals))[0] if goals else {"name": "MRR", "value": 0}
+
+    print("aquiiiii", mrr_goal)
+    mrr_by_months, mrr_actual = self.calculate_mrr_by_year_group_by_month(year, type, mrr_goal['value'])
+    complete_mrr_data = {"months": mrr_by_months, "goal": mrr_actual}
+    new_business[year]["MRR"] = complete_mrr_data
     
-    new_business = {year: {}}    
-    new_business[year]["MRR"] = self.calculate_mrr_by_year_group_by_month(year, type)
+    # Converter ObjectIds para strings
+    new_business = self.convert_object_id(new_business)
+    
+    print(new_business)
     return new_business
     
     

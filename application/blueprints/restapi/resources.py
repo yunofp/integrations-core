@@ -4,7 +4,7 @@ import json
 import threading
 from ..services.contracts import ContractsService
 from ..clients import clicksignClient, zeevClient
-from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository
+from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository, goal_repository
 import logging
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,8 @@ class NewBusinessResource(Resource):
     
     self.entriesRepository = entriesRepository.EntriesRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository)
+    self.goalsRepository = goal_repository.GoalRepository()
+    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository, self.goalsRepository)
     new_business = self.service.get_new_business_values(year, contract_type)
     
     return jsonify(new_business)
