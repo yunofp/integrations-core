@@ -3,8 +3,9 @@ from flask_restful import Resource
 import json
 import threading
 from ..services.contracts import ContractsService
+from ..services import indications_service
 from ..clients import clicksignClient, zeevClient
-from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository, goal_repository
+from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository, goal_repository, indications_repository
 import logging
 
 logger = logging.getLogger(__name__)
@@ -64,10 +65,11 @@ class ContractsResourceInput(Resource):
     self.entriesRepository = entriesRepository.EntriesRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.contractsRepository)
+    
+    thread = threading.Thread(target=self.service.insert_contracts(csv))
+    thread.start()
 
-    response = self.service.insert_contracts(csv)
-
-    return jsonify({'message': response})
+    return jsonify({'message': 'Request input process started'})
   
 class NewBusinessResource(Resource):
   def get(self):
@@ -84,12 +86,18 @@ class NewBusinessResource(Resource):
     
     self.entriesRepository = entriesRepository.EntriesRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.goalsRepository = goal_repository.GoalRepository()
-    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository, self.goalsRepository)
+    self.goal_repository = goal_repository.GoalRepository()
+    self.indications_repository = indications_repository.IndicationsRepository()
+    self.indications_service = indications_service.IndicationsService(self.indications_repository)
+    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository, self.goal_repository)
     
     if format == 'json':
-      new_business = self.service.get_new_business_values(year, contract_type)
-      return jsonify(new_business)
+      # new_business = self.service.get_new_business_values(year, contract_type)
+      indications = self.indications_service.get_indications_count_by_month()
+      #TODO: pensar em transferir os dados de novos negocios para um outro serviço
+      #TODO: corrigir retorno dos dados
+      print(indications)
+      return jsonify(indications)
     
     csv_buffer = self.service.save_new_business_to_csv(year, contract_type)
     return Response(

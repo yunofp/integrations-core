@@ -5,7 +5,7 @@ import pandas as pd
 from io import StringIO
 import requests
 from datetime import datetime, timezone, timedelta
-from ..utils import formatting, dataProcessing
+from ..utils import formatting, dataProcessing, date
 from flask import current_app as app
 from flask import jsonify
 import pytz 
@@ -29,7 +29,7 @@ class ContractsService:
     self.config = app.config
     self.ProfileRepository = ProfileRepository
     self.entriesRepository = entriesRepository
-    self.ContractRepository = ContractRepository
+    self.contract_repository = ContractRepository
     self.goalsRepository = goalsRepository
 
   def listManyRetries(self):
@@ -370,7 +370,7 @@ class ContractsService:
         raise ValueError(f"Error processing CSV file: {e}")
     
   def cod_already_exists(self, code):
-    if self.ContractRepository.find_by_code(code) is not None:
+    if self.contract_repository.find_by_code(code) is not None:
       return True
     
     return False
@@ -424,8 +424,9 @@ class ContractsService:
           cancel_day_index
       )
       entries.append(entry_dict)
- 
-    self.entriesRepository.insert_many(entries, session)
+    if len(entries) > 0:
+      self.entriesRepository.insert_many(entries, session)
+  
 
   def insert_contracts(self, csv):
     content = self.validate_csv_file(csv)
@@ -436,55 +437,60 @@ class ContractsService:
     logger.info("File sent on request is valid.")
     df = pd.read_csv(StringIO(content))
 
-    for index, row in df.iterrows():
-        with app.dbClient.start_session() as session:
-          with session.start_transaction():
-          
-            readyStart = index >= 2
-            if not readyStart:
-                continue      
-            
-            is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
-            is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
-            # logger.info("insert_contracts | Inserting contract of: " + str(pandas_processement.get_cell_content(df, index, 'Nome do Cliente')) + " | " + str(index))
-            
-            if not is_code_null and not is_name_null:
-              cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
-              if not cod_exists:
-                profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
-                profile_id = self.ProfileRepository.insert_one(profile_dict, session)
-                profile_id = profile_id.inserted_id
+    with app.dbClient.start_session() as session:
+        try:
+            with session.start_transaction(max_commit_time_ms=1200000):
+                for index, row in df.iterrows():
+                    readyStart = index >= 2
+                    if not readyStart:
+                        continue      
+                    try:
+                        is_code_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'COD'))
+                        is_name_null = pd.isnull(pandas_processement.get_cell_content(df, index, 'Nome do Cliente'))
+                        
+                        if not is_code_null and not is_name_null:
+                            cod_exists = self.cod_already_exists(pandas_processement.get_cell_content(df, index, 'COD'))
+                            if not cod_exists:
+                                profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
+                                profile_id = self.ProfileRepository.insert_one(profile_dict, session)
+                                profile_id = profile_id.inserted_id
 
-                contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
-                contract_id = self.ContractRepository.insert_one(contract_dict, session)
-                
-                self.iterate_by_row(df, index, contract_id, pandas_processement.get_cell_content(df, index, 'COD'), session)
-                    
-            if is_code_null and not is_name_null:
-              new_cod = formatting.generate_code(df, index)
-              while self.cod_already_exists(new_cod):
-                new_cod = formatting.get_next_sequence(new_cod)
+                                contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
+                                contract_id = self.contract_repository.insert_one(contract_dict, session)
+                                
+                                self.iterate_by_row(df, index, contract_id, pandas_processement.get_cell_content(df, index, 'COD'), session)
+                                
+                        if is_code_null and not is_name_null:
+                            new_cod = formatting.generate_code(df, index)
+                            while self.cod_already_exists(new_cod):
+                                new_cod = formatting.get_next_sequence(new_cod)
 
-              cod_exists = self.cod_already_exists(new_cod)
-              if not cod_exists:
-                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
-                self.ProfileRepository.insert_one(profile_dict, session)
-                profile_id = self.ProfileRepository.get_last_profile_document_id(new_cod)
+                            cod_exists = self.cod_already_exists(new_cod)
+                            if not cod_exists:
+                                profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
+                                profile_inserted = self.ProfileRepository.insert_one(profile_dict, session)
+                                profile_inserted_id = profile_inserted.inserted_id
+                                # profile_id = self.ProfileRepository.get_last_profile_document_id(profile_inserted_id)
+                                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_inserted_id)
+                                contract_id = self.contract_repository.insert_one(contract_dict, session)
 
-                contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_id)
-                contract_id = self.ContractRepository.insert_one(contract_dict, session)
+                                self.iterate_by_row(df, index, contract_id, new_cod, session)
 
-                self.iterate_by_row(df, index, contract_id, new_cod, session)
+                    except Exception as e:
+                        logger.info("insert_contracts | Row Processing Exception | " + str(e))
+                        raise  # Re-raise exception to trigger rollback
+
+        except Exception as e:
+            logger.info("insert_contracts | Transaction Exception | " + str(e))
+            raise  # Re-raise the exception after aborting the transaction
+
+        else:
+            logger.info("insert_contracts | Transaction committed successfully.")
 
 
   def calculate_mrr_by_year_group_by_month(self, year, type, goal) -> dict:
-    if not year:
-        return {"error": "year not defined", "result": 0}
-
-    months_list = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-
-    
-    contracts_ids = self.ContractRepository.find_many_by_type(type, only_ids=True)
+    months_list = date.get_months_list()    
+    contracts_ids = self.contract_repository.find_many_by_type(type, only_ids=True)
     contracts_ids_objects_id = [ObjectId(item['_id']) for item in contracts_ids]
   
     entries = self.entriesRepository.find_many_by_year_by_contracts_ids(year, contracts_ids_objects_id)
@@ -495,12 +501,53 @@ class ContractsService:
     
     entries_data_frame['payment_date'] = pd.to_datetime(entries_data_frame['payment_date'])
     entries_data_frame['month'] = entries_data_frame['payment_date'].dt.strftime('%b').str.upper()
-    print(entries_data_frame['payment_date'].dt.strftime('%b').str.upper())
     entries_data_frame['month'] = pd.Categorical(entries_data_frame['month'], categories=months_list, ordered=True)
 
-    months_mrr = entries_data_frame.groupby('month')['value'].sum().reindex(months_list, fill_value=0).to_dict()
+    months_mrr = entries_data_frame.groupby('month', observed=False)['value'].sum().reindex(months_list, fill_value=0).to_dict()
+    current_month = datetime.now().strftime('%b').upper()
+    actual_mrr = months_mrr.get(current_month)
+
+    return months_mrr, {"goal": goal, "actual": actual_mrr}
+  
+  def calculate_implantation_by_year_group_by_month(self, year,type, goal) -> dict:
+    months_list = date.get_months_list()
+
+    contracts = self.contract_repository.find_many_by_first_implantation_payment_date_year(year)
+ 
+    contracts_data_frame = pd.DataFrame(contracts)
     
-    return months_mrr, {"goal": goal, "actual": entries_data_frame['value'].sum()}
+    if contracts_data_frame.empty:
+        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
+    
+    contracts_data_frame['first_implantation_payment_date'] = pd.to_datetime(contracts_data_frame['first_implantation_payment_date'])
+    contracts_data_frame['month'] = contracts_data_frame['first_implantation_payment_date'].dt.strftime('%b').str.upper()
+    contracts_data_frame['month'] = pd.Categorical(contracts_data_frame['month'], categories=months_list, ordered=True)
+
+    months_mrr = contracts_data_frame.groupby('month',observed=False)['implantation'].sum().reindex(months_list, fill_value=0).to_dict()
+  
+    total = sum(months_mrr.values())
+    return months_mrr, {"goal": goal, "actual": total}
+  
+  def calculate_aum_estimated_by_year_group_by_month(self, year, type, goal) -> dict:
+    months_list = date.get_months_list()
+
+    contracts = self.contract_repository.find_many_by_signed_at_year(year)
+ 
+    contracts_data_frame = pd.DataFrame(contracts)
+    if contracts_data_frame.empty:
+        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
+    
+    contracts_data_frame['signed_at'] = pd.to_datetime(contracts_data_frame['signed_at'])
+    contracts_data_frame['month'] = contracts_data_frame['signed_at'].dt.strftime('%b').str.upper()
+    contracts_data_frame['month'] = pd.Categorical(contracts_data_frame['month'], categories=months_list, ordered=True)
+
+    contracts_data_frame['estimated'] = contracts_data_frame['aum'].apply(lambda x: x.get('estimated', 0))
+
+    months_mrr = contracts_data_frame.groupby('month',observed=False)['estimated'].sum().reindex(months_list, fill_value=0).to_dict()
+
+  
+    total = sum(months_mrr.values())
+    return months_mrr, {"goal": goal, "actual": total}
 
   def convert_object_id(self, data):
       if isinstance(data, dict):
@@ -513,10 +560,8 @@ class ContractsService:
           return data
         
   def save_new_business_to_csv(self, year=None, type='GROW', filename='new_business.csv'):
-    # Obter os dados de new_business
     new_business = self.get_new_business_values(year, type)
     
-    # Extrair os dados do dicionário para uma lista de dicionários
     data = []
     for year, metrics in new_business.items():
         for metric_name, metric_data in metrics.items():
@@ -530,7 +575,6 @@ class ContractsService:
                     'Actual': metric_data['goal']['actual']
                 })
     
-    # Converter a lista de dicionários em um DataFrame do pandas
     df = pd.DataFrame(data)
     
     buffer = io.StringIO()
@@ -538,24 +582,41 @@ class ContractsService:
     buffer.seek(0)
     
     return buffer
-
+  
+  def get_new_clients_count_by_month(self ,month)-> int:
+    if not month:
+      return 0
+    return self.contract_repository.get_new_clients_count_by_month(month)
+  
   def get_new_business_values(self, year=None, type='GROW') -> dict:
     if not year:
         return {"error": "year not defined", "result": {}}
 
     new_business = {year: {}} 
-    goals = self.goalsRepository.find_by_names(['MRR'])
-    mrr_goal = list(filter(lambda goal: goal['name'] == 'MRR', goals))[0] if goals else {"name": "MRR", "value": 0}
-
-    print("aquiiiii", mrr_goal)
+    goals = self.goalsRepository.find_by_names(['NOVO MRR', 'NOVO IMP', 'NOVO AUM'])
+    mrr_goal = next((goal for goal in goals if goal['name'] == 'NOVO MRR'), {"name": "NOVO MRR", "value": 0})
+    imp_goal = next((goal for goal in goals if goal['name'] == 'NOVO IMP'), {"name": "NOVO IMP", "value": 0})
+    aum_goal = next((goal for goal in goals if goal['name'] == 'NOVO AUM'), {"name": "NOVO AUM", "value": 0})
+    
     mrr_by_months, mrr_actual = self.calculate_mrr_by_year_group_by_month(year, type, mrr_goal['value'])
     complete_mrr_data = {"months": mrr_by_months, "goal": mrr_actual}
     new_business[year]["MRR"] = complete_mrr_data
     
-    # Converter ObjectIds para strings
-    new_business = self.convert_object_id(new_business)
+    implantation_by_months, implantation_actual = self.calculate_implantation_by_year_group_by_month(year, type, imp_goal['value'])
+    complete_implantation_data = {"months": implantation_by_months, "goal": implantation_actual}
+    new_business[year]["NOVO IMP"] = complete_implantation_data
     
-    print(new_business)
+    implantation_by_months, implantation_actual = self.calculate_aum_estimated_by_year_group_by_month(year, type, imp_goal['value'])
+    
+    aum_by_months, aum_actual = self.calculate_aum_estimated_by_year_group_by_month(year, type, aum_goal['value'])
+    complete_implantation_data = {"months": aum_by_months, "goal": aum_actual}
+    new_business[year]["NOVO AUM"] = complete_implantation_data
+
+    new_clients_count =  self.get_new_clients_count_by_month(datetime.now())
+
+    new_business["NEW CLIENTS"] = new_clients_count
+    
+    new_business = self.convert_object_id(new_business)
     return new_business
     
     

@@ -1,18 +1,29 @@
-from datetime import datetime
-import re
-from datetime import datetime
 import pytz
+from datetime import datetime
+import pandas as pd
+import re
 
-def convert_to_utc_date(date_str):
-    if not date_str or date_str == "-":
-        return date_str
+def convert_to_utc_date(date_str):  
+    if not date_str or date_str == "-" or pd.isna(date_str) or date_str == 0 or date_str == "0" or date_str == None: 
+        return None
+    
+    if len(date_str) == 8 and date_str.isdigit():
+        date_str = f"{date_str[:2]}-{date_str[2:4]}-{date_str[4:]}"
+    date_str = date_str.replace("/", "-")
     
     br_tz = pytz.timezone('America/Sao_Paulo')
-    date = datetime.strptime(date_str, "%d/%m/%Y")
-    date_br = br_tz.localize(date)
-    date_utc = date_br.astimezone(pytz.UTC)
     
-    return date_utc
+    for date_format in ("%d-%m-%Y", "%d-%m-%y", "%d%m-%Y", "%d%m-%y", "%d-%m-%y"):
+        try:
+            date = datetime.strptime(date_str, date_format)
+            date_br = br_tz.localize(date)
+            date_utc = date_br.astimezone(pytz.UTC)
+            
+            return date_utc
+        except ValueError:
+            continue 
+    raise ValueError(f"Unknown date format: {date_str}")
+
 
 def formatCpf(num):
     if not num: return num
@@ -29,6 +40,7 @@ def formatCpf(num):
         return num
 
 def clear_cpf(cpf):
+    if not cpf: return None
     return ''.join(c for c in cpf if c.isdigit())
 
 def formatBirthdate(data):
@@ -80,20 +92,42 @@ def verifyCpfCnpj(document):
         return "INVALID"
 
 def extract_numbers_as_double(s):
-    filtered_numbers = ''.join(c for c in str(s) if c.isdigit() or c == '.')
-    try:
-        result = float(filtered_numbers)
-    except ValueError:
-        result = 0.0
-    return result
+    if not s or 'R$' not in s:
+        return 0.0
+    
+    filtered_numbers = s.replace('R$', '').strip()
+    
+    filtered_numbers = filtered_numbers.replace('.', '').replace(',', '.')
+    
+    if not filtered_numbers or filtered_numbers == '-' or not filtered_numbers.replace('.', '', 1).isdigit():
+        return 0.0
+
+    return float(filtered_numbers)
 
 def clean_currency_string_to_double(currency_str):
-    cleaned_str = str(currency_str).replace("INATIVO", "0").replace("nan", "0").replace('R$', '0').replace('-', "0").strip()
+    # Substitui valores específicos por "0" e remove símbolos indesejados
+    cleaned_str = str(currency_str).replace("INATIVO", "0").replace("nan", "0").replace('R$', '').replace('-', "").strip()
+    
+    # Remove espaços em branco
     cleaned_str = re.sub(r'\s+', '', cleaned_str)
+    
+    # Remove pontos usados como separadores de milhar
     cleaned_str = cleaned_str.replace('.', '')
+    
+    # Substitui a primeira vírgula encontrada por ponto, para usar como separador decimal
     cleaned_str = re.sub(r',', '.', cleaned_str, count=1)
+    
+    # Remove quaisquer outras vírgulas
     cleaned_str = cleaned_str.replace(',', '')
+    
+    # Verifica se a string está vazia ou é None após todas as limpezas
+    if not cleaned_str or cleaned_str == 'None':
+        return 0.0
+    
+
     return float(cleaned_str)
+  
+
 
 def processing_number_insert(value):
     invalid_values = ["-", "R$ -", "", "INATIVO", "nan", "NaN", "null", None]
@@ -158,4 +192,6 @@ def get_next_sequence(cod):
     return int(f"{prefix:02d}{next_sequence:04d}")
 
 def clean_numbers(value):
+    if value is None:
+        return None
     return ''.join(filter(str.isdigit, value))

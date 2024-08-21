@@ -1,5 +1,6 @@
+from datetime import datetime
 from flask import current_app as app
-
+from ..utils import date as date_utils
 class ContractsRepository:
     def __init__(self):
         self.config = app.config
@@ -27,6 +28,43 @@ class ContractsRepository:
             contracts = self.collection.find({"type": type}, projection={'_id': 1})
             return list(contracts)
         return list(self.collection.find({"type": type}))
+    
+    
+    def find_many_by_first_implantation_payment_date_year(self, year):
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+        
+        contracts = self.collection.find({
+        'first_implantation_payment_date': {
+            '$gte': start_date,
+            '$lt': end_date
+            },
+        })
+        return list(contracts)
+    
+    def find_many_by_signed_at_year(self, year):
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+        
+        contracts = self.collection.find({
+        'signed_at': {
+            '$gte': start_date,
+            '$lt': end_date
+            },
+        })
+        return list(contracts)
+    
+    def get_new_clients_count_by_month(self, date):
+        converted_date = date_utils.convert_date_utc(date)
+        start_date = datetime(converted_date.year, converted_date.month, 1)
+        end_date = datetime(converted_date.year, converted_date.month + 1, 1)
+        contracts = self.collection.count_documents({
+        'signed_at': {
+            '$gte': start_date,
+            '$lt': end_date
+            },
+        })
+        return contracts
 
 
     
