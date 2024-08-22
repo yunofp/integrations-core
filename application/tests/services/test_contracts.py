@@ -5,7 +5,7 @@ import logging
 from application.tests.populate import zeev_responses
 from application.blueprints.services.contracts import ContractsService
 from application.blueprints.repositories.processedRequestRepository import ProcessedRequestsRepository
-from application.blueprints.utils.dataProcessing import defineVariablesGrow, defineVariablesWealth, defineVariablesWork
+from application.blueprints.utils.data_processing import defineVariablesGrow, defineVariablesWealth, defineVariablesWork
 from application.blueprints.utils import formatting
 from datetime import datetime, timezone
 

@@ -5,7 +5,7 @@ import pandas as pd
 from io import StringIO
 import requests
 from datetime import datetime, timezone, timedelta
-from ..utils import formatting, dataProcessing, date
+from ..utils import formatting, data_processing, date
 from flask import current_app as app
 from flask import jsonify
 import pytz 
@@ -44,7 +44,7 @@ class ContractsService:
     envelope = self.clickSignClient.createEnvelope(requestId)
     envelopeId = envelope.get('data', {}).get('id')
     logger.info("processContract | envelopeId:" + str(envelopeId))
-    workType = dataProcessing.findByName(contractValues, "qualSeraOContrato")
+    workType = data_processing.findByName(contractValues, "qualSeraOContrato")
 
     if not workType or 'Não sei' in workType:
       raise Exception("processContract | Invalid work type:" + str(requestId))
@@ -55,30 +55,30 @@ class ContractsService:
     
     if workTypeFormatted == "Grow":
       
-      contractVariables = dataProcessing.defineVariablesGrow(contractValues)
+      contractVariables = data_processing.defineVariablesGrow(contractValues)
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documents.append({'type': 'Grow', 'id': documentId})
      
     elif workTypeFormatted == "Wealth":
       
-      contractVariables = dataProcessing.defineVariablesWealth(contractValues)
+      contractVariables = data_processing.defineVariablesWealth(contractValues)
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documents.append({'type': 'Wealth', 'id': documentId})
       
     elif workTypeFormatted == "Work":
       
-      contractVariables = dataProcessing.defineVariablesWork(contractValues)
+      contractVariables = data_processing.defineVariablesWork(contractValues)
       documentId = self._processContractSteps(contractVariables, envelopeId, workTypeFormatted)
       documents.append({'type': 'Work', 'id': documentId})
       
     elif workTypeFormatted == "Grow & Wealth":
-      contractVariablesGrow = dataProcessing.defineVariablesGrow(contractValues)
+      contractVariablesGrow = data_processing.defineVariablesGrow(contractValues)
       
       implantationValue = '0,00'
       paymentDate = ' '
       paymentMethod = ' '
 
-      contractVariablesWealth = dataProcessing.defineVariablesWealth(contractValues, implantationValue, paymentDate, paymentMethod)
+      contractVariablesWealth = data_processing.defineVariablesWealth(contractValues, implantationValue, paymentDate, paymentMethod)
       documentIdGrow = self._processContractSteps(contractVariablesGrow, envelopeId, 'Grow')
       newEnvelope = self.clickSignClient.createEnvelope(str(requestId) + 'Wealth')
       newEnvelopeId = newEnvelope.get('data', {}).get('id')
@@ -272,7 +272,7 @@ class ContractsService:
               
               contractValues = contractRequest[0]['formFields']
               
-              isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
+              isContractCompletelyFilledToProcess = data_processing.findByName(contractValues, "valorDoFEE")
               
               if not isContractCompletelyFilledToProcess:
                   logger.info('runTryAgain | Contract not completely filled to process: ' + str(requestId))
@@ -332,7 +332,7 @@ class ContractsService:
       
       contractValues = contractRequest['formFields']
 
-      isContractCompletelyFilledToProcess = dataProcessing.findByName(contractValues, "valorDoFEE")
+      isContractCompletelyFilledToProcess = data_processing.findByName(contractValues, "valorDoFEE")
       
       if not isContractCompletelyFilledToProcess:
         logger.info("processAllContracts | Contract not completely filled to process:" + str(requestId))
@@ -488,138 +488,7 @@ class ContractsService:
             logger.info("insert_contracts | Transaction committed successfully.")
 
 
-  def calculate_mrr_by_year_group_by_month(self, year, type, goal) -> dict:
-    months_list = date.get_months_list()    
-    contracts_ids = self.contract_repository.find_many_by_type(type, only_ids=True)
-    contracts_ids_objects_id = [ObjectId(item['_id']) for item in contracts_ids]
   
-    entries = self.entriesRepository.find_many_by_year_by_contracts_ids(year, contracts_ids_objects_id)
-    entries_data_frame = pd.DataFrame(entries)
-    
-    if entries_data_frame.empty:
-        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
-    
-    entries_data_frame['payment_date'] = pd.to_datetime(entries_data_frame['payment_date'])
-    entries_data_frame['month'] = entries_data_frame['payment_date'].dt.strftime('%b').str.upper()
-    entries_data_frame['month'] = pd.Categorical(entries_data_frame['month'], categories=months_list, ordered=True)
-
-    months_mrr = entries_data_frame.groupby('month', observed=False)['value'].sum().reindex(months_list, fill_value=0).to_dict()
-    current_month = datetime.now().strftime('%b').upper()
-    actual_mrr = months_mrr.get(current_month)
-
-    return months_mrr, {"goal": goal, "actual": actual_mrr}
-  
-  def calculate_implantation_by_year_group_by_month(self, year,type, goal) -> dict:
-    months_list = date.get_months_list()
-
-    contracts = self.contract_repository.find_many_by_first_implantation_payment_date_year(year)
- 
-    contracts_data_frame = pd.DataFrame(contracts)
-    
-    if contracts_data_frame.empty:
-        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
-    
-    contracts_data_frame['first_implantation_payment_date'] = pd.to_datetime(contracts_data_frame['first_implantation_payment_date'])
-    contracts_data_frame['month'] = contracts_data_frame['first_implantation_payment_date'].dt.strftime('%b').str.upper()
-    contracts_data_frame['month'] = pd.Categorical(contracts_data_frame['month'], categories=months_list, ordered=True)
-
-    months_mrr = contracts_data_frame.groupby('month',observed=False)['implantation'].sum().reindex(months_list, fill_value=0).to_dict()
-  
-    total = sum(months_mrr.values())
-    return months_mrr, {"goal": goal, "actual": total}
-  
-  def calculate_aum_estimated_by_year_group_by_month(self, year, type, goal) -> dict:
-    months_list = date.get_months_list()
-
-    contracts = self.contract_repository.find_many_by_signed_at_year(year)
- 
-    contracts_data_frame = pd.DataFrame(contracts)
-    if contracts_data_frame.empty:
-        return {month: 0 for month in months_list}, {"goal": goal, "actual": 0}
-    
-    contracts_data_frame['signed_at'] = pd.to_datetime(contracts_data_frame['signed_at'])
-    contracts_data_frame['month'] = contracts_data_frame['signed_at'].dt.strftime('%b').str.upper()
-    contracts_data_frame['month'] = pd.Categorical(contracts_data_frame['month'], categories=months_list, ordered=True)
-
-    contracts_data_frame['estimated'] = contracts_data_frame['aum'].apply(lambda x: x.get('estimated', 0))
-
-    months_mrr = contracts_data_frame.groupby('month',observed=False)['estimated'].sum().reindex(months_list, fill_value=0).to_dict()
-
-  
-    total = sum(months_mrr.values())
-    return months_mrr, {"goal": goal, "actual": total}
-
-  def convert_object_id(self, data):
-      if isinstance(data, dict):
-          return {k: self.convert_object_id(v) for k, v in data.items()}
-      elif isinstance(data, list):
-          return [self.convert_object_id(i) for i in data]
-      elif isinstance(data, ObjectId):
-          return str(data)
-      else:
-          return data
-        
-  def save_new_business_to_csv(self, year=None, type='GROW', filename='new_business.csv'):
-    new_business = self.get_new_business_values(year, type)
-    
-    data = []
-    for year, metrics in new_business.items():
-        for metric_name, metric_data in metrics.items():
-            for month, value in metric_data['months'].items():
-                data.append({
-                    'Year': year,
-                    'Metric': metric_name,
-                    'Month': month,
-                    'Value': value,
-                    'Goal': metric_data['goal']['goal'],
-                    'Actual': metric_data['goal']['actual']
-                })
-    
-    df = pd.DataFrame(data)
-    
-    buffer = io.StringIO()
-    df.to_csv(buffer, index=False)
-    buffer.seek(0)
-    
-    return buffer
-  
-  def get_new_clients_count_by_month(self ,month)-> int:
-    if not month:
-      return 0
-    return self.contract_repository.get_new_clients_count_by_month(month)
-  
-  def get_new_business_values(self, year=None, type='GROW') -> dict:
-    if not year:
-        return {"error": "year not defined", "result": {}}
-
-    new_business = {year: {}} 
-    goals = self.goalsRepository.find_by_names(['NOVO MRR', 'NOVO IMP', 'NOVO AUM'])
-    mrr_goal = next((goal for goal in goals if goal['name'] == 'NOVO MRR'), {"name": "NOVO MRR", "value": 0})
-    imp_goal = next((goal for goal in goals if goal['name'] == 'NOVO IMP'), {"name": "NOVO IMP", "value": 0})
-    aum_goal = next((goal for goal in goals if goal['name'] == 'NOVO AUM'), {"name": "NOVO AUM", "value": 0})
-    
-    mrr_by_months, mrr_actual = self.calculate_mrr_by_year_group_by_month(year, type, mrr_goal['value'])
-    complete_mrr_data = {"months": mrr_by_months, "goal": mrr_actual}
-    new_business[year]["MRR"] = complete_mrr_data
-    
-    implantation_by_months, implantation_actual = self.calculate_implantation_by_year_group_by_month(year, type, imp_goal['value'])
-    complete_implantation_data = {"months": implantation_by_months, "goal": implantation_actual}
-    new_business[year]["NOVO IMP"] = complete_implantation_data
-    
-    implantation_by_months, implantation_actual = self.calculate_aum_estimated_by_year_group_by_month(year, type, imp_goal['value'])
-    
-    aum_by_months, aum_actual = self.calculate_aum_estimated_by_year_group_by_month(year, type, aum_goal['value'])
-    complete_implantation_data = {"months": aum_by_months, "goal": aum_actual}
-    new_business[year]["NOVO AUM"] = complete_implantation_data
-
-    new_clients_count =  self.get_new_clients_count_by_month(datetime.now())
-
-    new_business["NEW CLIENTS"] = new_clients_count
-    
-    new_business = self.convert_object_id(new_business)
-    return new_business
-    
-    
     
                      
   

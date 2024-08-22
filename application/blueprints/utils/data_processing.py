@@ -1,3 +1,4 @@
+from bson.objectid import ObjectId
 def findByName(list, name): 
     objectFound = next((item for item in list if item["name"] == name), '')
     if not objectFound:
@@ -88,3 +89,13 @@ def validate_contract_code(value):
         if value[0] in '123' and value[1] in '12':
             return True
     return False
+
+def convert_object_id(data):
+    if isinstance(data, dict):
+        return {k: convert_object_id(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [convert_object_id(i) for i in data]
+    if isinstance(data, ObjectId):
+        return str(data)
+    return data
+ 

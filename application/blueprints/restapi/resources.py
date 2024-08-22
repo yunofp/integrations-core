@@ -3,7 +3,9 @@ from flask_restful import Resource
 import json
 import threading
 from ..services.contracts import ContractsService
-from ..services import indications_service
+from application.blueprints.services.business_service import BusinessService
+from application.blueprints.services.csv_service import CsvService
+from application.blueprints.utils import data_processing
 from ..clients import clicksignClient, zeevClient
 from ..repositories import contractsRepository, entriesRepository, processedRequestRepository, profileRepository, goal_repository, indications_repository
 import logging
@@ -88,20 +90,17 @@ class NewBusinessResource(Resource):
     self.contractsRepository = contractsRepository.ContractsRepository()
     self.goal_repository = goal_repository.GoalRepository()
     self.indications_repository = indications_repository.IndicationsRepository()
-    self.indications_service = indications_service.IndicationsService(self.indications_repository)
-    self.service = ContractsService(None,None,None,None,self.entriesRepository,self.contractsRepository, self.goal_repository)
-    
+    self.businessService = BusinessService(self.contractsRepository, self.entriesRepository, self.goal_repository, self.indications_repository)
+    self.csv_service = CsvService()
+    new_business = self.businessService.get_new_business_values(year, contract_type) 
+       
     if format == 'json':
-      # new_business = self.service.get_new_business_values(year, contract_type)
-      indications = self.indications_service.get_indications_count_by_month()
-      #TODO: pensar em transferir os dados de novos negocios para um outro serviço
-      #TODO: corrigir retorno dos dados
-      print(indications)
-      return jsonify(indications)
+      return jsonify(new_business)
     
-    csv_buffer = self.service.save_new_business_to_csv(year, contract_type)
-    return Response(
-        csv_buffer,
-        mimetype='text/csv',
-        headers={"Content-Disposition": "attachment;filename=new_business.csv"}
-    )
+    if format == 'csv':
+      csv_buffer = self.csv_service.save_new_business_to_csv(new_business)
+      return Response(
+          csv_buffer,
+          mimetype='text/csv',
+          headers={"Content-Disposition": "attachment;filename=new_business.csv"}
+      )
