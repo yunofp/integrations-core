@@ -14,7 +14,7 @@ def get_cell_content(df, row, column):
     else:
         content = df.iloc[row, column]
 
-    if pd.isna(content) or content is "-" or content is "R$ -": 
+    if pd.isna(content) or content == "-" or content == "R$ -": 
         content = None
         
     return content 
@@ -64,8 +64,6 @@ def get_debt_day(df, index):
 
 def create_contract_dict(index, code, df, profile_id):
     df.columns = df.columns.str.strip()
-    print(df.head())
-
     contract = {}
     debt_day = get_debt_day(df, index)
 
@@ -75,7 +73,6 @@ def create_contract_dict(index, code, df, profile_id):
     contract['source_acquisition'] = add_source_acquisition(get_cell_content(df, index, 'Canal de Aquisição'))
     contract['status'] = "A definir" if pd.isnull(get_cell_content(df, index, 1)) else get_cell_content(df, index, 1)
     contract["type"] = get_cell_content(df, index, 'Contrato')
-    print('aquiiiiii', index)
     contract["aum"] = {
         "estimated" : formatting.extract_numbers_as_double(get_cell_content(df, index, 'AUM Estimado')),
         "actual" : formatting.extract_numbers_as_double(get_cell_content(df, index, 'AUM Estimado'))
@@ -154,9 +151,8 @@ def create_entry_dict(month_year,index, df, code, month_year_index, contract_id,
     }
     planner_name = "DESCONHECIDO" if get_cell_content(df, index, planner_name_index) == "INATIVO" else get_cell_content(df, index, planner_name_index)
     entry["planners"] = [{"name": planner_name}]
-    print('aquiiiiiiii', index)
     entry["aum"] = {
-        # "estimated": formatting.processing_number_insert(get_cell_content(df, index, "AUM Estimado")),
+        "estimated": formatting.processing_number_insert(get_cell_content(df, index, "AUM Estimado")),
         "actual": formatting.processing_number_insert(get_cell_content(df, index, aum_index))
     }
     entry["due_date"] = due_date

@@ -5,14 +5,10 @@ import pandas as pd
 from io import StringIO
 import requests
 from datetime import datetime, timezone, timedelta
-from ..utils import formatting, data_processing, date
+from ..utils import formatting, data_processing
 from flask import current_app as app
-from flask import jsonify
 import pytz 
 from . import pandas_processement
-import time
-import sys
-from bson.objectid import ObjectId
 
 logger = logging.getLogger(__name__)
 class ContractsService:
@@ -454,10 +450,11 @@ class ContractsService:
                                 profile_dict = pandas_processement.create_profile_dict(index, df, pandas_processement.get_cell_content(df, index, 'COD'))
                                 profile_id = self.ProfileRepository.insert_one(profile_dict, session)
                                 profile_id = profile_id.inserted_id
+                              
 
                                 contract_dict = pandas_processement.create_contract_dict(index, pandas_processement.get_cell_content(df, index, 'COD'), df, profile_id)
+                      
                                 contract_id = self.contract_repository.insert_one(contract_dict, session)
-                                
                                 self.iterate_by_row(df, index, contract_id, pandas_processement.get_cell_content(df, index, 'COD'), session)
                                 
                         if is_code_null and not is_name_null:
@@ -470,20 +467,17 @@ class ContractsService:
                                 profile_dict = pandas_processement.create_profile_dict(index, df, new_cod)
                                 profile_inserted = self.ProfileRepository.insert_one(profile_dict, session)
                                 profile_inserted_id = profile_inserted.inserted_id
-                                # profile_id = self.ProfileRepository.get_last_profile_document_id(profile_inserted_id)
                                 contract_dict = pandas_processement.create_contract_dict(index, new_cod, df, profile_inserted_id)
                                 contract_id = self.contract_repository.insert_one(contract_dict, session)
-
                                 self.iterate_by_row(df, index, contract_id, new_cod, session)
 
                     except Exception as e:
                         logger.info("insert_contracts | Row Processing Exception | " + str(e))
-                        raise  # Re-raise exception to trigger rollback
+                        raise
 
         except Exception as e:
             logger.info("insert_contracts | Transaction Exception | " + str(e))
-            raise  # Re-raise the exception after aborting the transaction
-
+            raise
         else:
             logger.info("insert_contracts | Transaction committed successfully.")
 

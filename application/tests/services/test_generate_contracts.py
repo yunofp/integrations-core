@@ -17,10 +17,6 @@ def app():
     app.config['CONTRACTS_PROCESSING_DAYS_INTERVAL'] = 5
     return app
 
-@pytest.fixture
-def app_context(app):
-    with app.app_context():
-        yield
 
 @pytest.fixture
 def service(app_context):

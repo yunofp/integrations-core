@@ -66,7 +66,7 @@ class ContractsResourceInput(Resource):
     self.profileRepository = profileRepository.ProfileRepository()
     self.entriesRepository = entriesRepository.EntriesRepository()
     self.contractsRepository = contractsRepository.ContractsRepository()
-    self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.contractsRepository)
+    self.service = ContractsService(None, None, None, self.profileRepository, self.entriesRepository, self.contractsRepository, None)
     
     thread = threading.Thread(target=self.service.insert_contracts(csv))
     thread.start()
