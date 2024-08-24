@@ -105,22 +105,16 @@ def extract_numbers_as_double(s):
     return float(filtered_numbers)
 
 def clean_currency_string_to_double(currency_str):
-    # Substitui valores específicos por "0" e remove símbolos indesejados
     cleaned_str = str(currency_str).replace("INATIVO", "0").replace("nan", "0").replace('R$', '').replace('-', "").strip()
     
-    # Remove espaços em branco
     cleaned_str = re.sub(r'\s+', '', cleaned_str)
     
-    # Remove pontos usados como separadores de milhar
     cleaned_str = cleaned_str.replace('.', '')
     
-    # Substitui a primeira vírgula encontrada por ponto, para usar como separador decimal
     cleaned_str = re.sub(r',', '.', cleaned_str, count=1)
     
-    # Remove quaisquer outras vírgulas
     cleaned_str = cleaned_str.replace(',', '')
     
-    # Verifica se a string está vazia ou é None após todas as limpezas
     if not cleaned_str or cleaned_str == 'None':
         return 0.0
     

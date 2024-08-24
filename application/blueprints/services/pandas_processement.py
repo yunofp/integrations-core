@@ -52,15 +52,15 @@ def get_debt_day(df, index):
     content = get_cell_content(df, index, 'Cobrança Mensal no Dia')
     
     if pd.isnull(content):
-        return 0  # Se o conteúdo for nulo, retorne 0
+        return 0 
     
     if isinstance(content, str) and not content.isdigit():
-        return content  # Se for uma string não numérica, retorne a string
+        return content 
     
     try:
-        return int(content)  # Tente converter para inteiro se for possível
+        return int(content) 
     except ValueError:
-        return content  # Se falhar, retorne o conteúdo original
+        return content 
 
 def create_contract_dict(index, code, df, profile_id):
     df.columns = df.columns.str.strip()
