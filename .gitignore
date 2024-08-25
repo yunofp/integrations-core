@@ -12,4 +12,5 @@ mongodb-keyfile
 .DS_Store
 htmlcov
 .coverage
+venv
 
