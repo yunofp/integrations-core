@@ -1,7 +1,10 @@
 from dynaconf import FlaskDynaconf
 import os
 import logging
+
 logger = logging.getLogger(__name__)
+
+
 def init_app(app):
     env = os.getenv('ENV_FOR_DYNACONF', 'default')
     settings_files = [f'settings.toml', f'settings.{env}.toml', '.secrets.toml']
