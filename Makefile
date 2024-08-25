@@ -33,3 +33,7 @@ clear:
 	@rm -rf $(VENV_DIR)
 
 .PHONY: flask-dev pytest pytest-cov clean
+
+save-dependencies:
+	@$(PIP) freeze > requirements.txt
+
