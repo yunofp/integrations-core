@@ -6,6 +6,21 @@ from application.blueprints.utils import date
 from application.blueprints.services.business_service import BusinessService
 
 
+@pytest.fixture
+def business_service():
+    mock_contract_repository = MagicMock()
+    mock_entries_repository = MagicMock()
+    mock_goals_repository = MagicMock()
+    mock_indications_repository = MagicMock()
+
+    return BusinessService(
+        mock_contract_repository,
+        mock_entries_repository,
+        mock_goals_repository,
+        mock_indications_repository,
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def mock_mongo():
     with patch("application.extensions.database.MongoClient") as MockMongoClient:
@@ -63,12 +78,6 @@ def client(app):
 @pytest.fixture()
 def runner(app):
     return app.test_cli_runner()
-
-
-@pytest.fixture
-def mock_date():
-    date.get_months_list = MagicMock(return_value=["JAN", "FEB", "MAR", "APR"])
-    return date
 
 
 @pytest.fixture

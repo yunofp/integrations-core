@@ -21,10 +21,10 @@ flask-dev: $(VENV_DIR)/bin/activate
 	ENV_FOR_DYNACONF=development $(FLASK) run
 
 pytest: $(VENV_DIR)/bin/activate
-	@$(PYTEST) --cov=application --cov-report=term-missing 
+	@$(PYTEST) --cov=application --cov-report=term-missing --cov-fail-under=80
 
 pytest-cov: $(VENV_DIR)/bin/activate
-	@$(PYTEST) --cov=application --cov-report=html
+	@$(PYTEST) --cov=application --cov-report=html --cov-fail-under=80
 
 clear:
 	@echo "Cleaning up..."

@@ -21,7 +21,7 @@ class ContractsService:
         ProfileRepository=None,
         entriesRepository=None,
         ContractRepository=None,
-        goalsRepository=None,
+        goals_repository=None,
     ):
         self.zeevClient = zeevClient
         self.processedRequestRepository = processedRequestRepository
@@ -30,7 +30,7 @@ class ContractsService:
         self.ProfileRepository = ProfileRepository
         self.entriesRepository = entriesRepository
         self.contract_repository = ContractRepository
-        self.goalsRepository = goalsRepository
+        self.goals_repository = goals_repository
 
     def listManyRetries(self):
         try:

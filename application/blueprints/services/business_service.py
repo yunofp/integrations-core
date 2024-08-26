@@ -12,12 +12,12 @@ class BusinessService:
         self,
         contract_repository,
         entries_repository,
-        goalsRepository,
+        goals_repository,
         indicationsRepository,
     ):
         self.contract_repository = contract_repository
         self.entriesRepository = entries_repository
-        self.goalsRepository = goalsRepository
+        self.goals_repository = goals_repository
         self.indicationsRepository = indicationsRepository
 
     def calculate_mrr_by_year_group_by_month(self, year, type, goal):
@@ -49,6 +49,7 @@ class BusinessService:
             .reindex(months_list, fill_value=0)
             .to_dict()
         )
+
         current_month = datetime.now().strftime("%b").upper()
         actual_mrr = months_mrr.get(current_month)
 
@@ -137,7 +138,9 @@ class BusinessService:
             return {"error": "year not defined", "result": {}}
 
         new_business = {"current_month": {}}
-        goals = self.goalsRepository.find_by_names(["NOVO MRR", "NOVO IMP", "NOVO AUM"])
+        goals = self.goals_repository.find_by_names(
+            ["NOVO MRR", "NOVO IMP", "NOVO AUM"]
+        )
         mrr_goal = next(
             (goal for goal in goals if goal["name"] == "NOVO MRR"),
             {"name": "NOVO MRR", "value": 0},
