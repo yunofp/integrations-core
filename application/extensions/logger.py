@@ -24,4 +24,3 @@ def configure_logging(app):
     file_handler.setFormatter(logging.Formatter(fmt=log_format, datefmt=date_format))
     
     app.logger.addHandler(file_handler)
-    app.logger.info("Logging is configured.")

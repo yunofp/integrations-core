@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def init_app(app):
     uri = app.config.get('MONGO_DATABASE_URI')
     database = app.config.get('MONGO_DATABASE_NAME')
