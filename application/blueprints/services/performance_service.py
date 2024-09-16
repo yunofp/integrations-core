@@ -22,7 +22,8 @@ class PerformanceService:
                 indications_by_type_ordered_by_month
             )
         )
-        print(calculate_progress_indications_type_by_year_group_by_month)
+        indications_ordered_by_months = indications_by_type_ordered_by_month["is_lead"]
+        print(indications_ordered_by_months)
 
     def calculate_indications_type_by_year_group_by_month(self, indications):
 
