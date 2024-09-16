@@ -165,5 +165,8 @@ class PerformanceResource(Resource):
         if not year:
             return jsonify({"error": "Year is required"}), 400
         self.indications_repository = indications_repository.IndicationsRepository()
-        self.performance_service = PerformanceService(self.indications_repository)
-        self.performance_service.calculate_indications_type_by_year_group_by_month(year)
+        self.goals_repository = goal_repository.GoalRepository()
+        self.performance_service = PerformanceService(
+            self.indications_repository, self.goals_repository
+        )
+        self.performance_service.process_all_indications_by_year(year)
