@@ -23,7 +23,24 @@ class PerformanceService:
             )
         )
         indications_ordered_by_months = indications_by_type_ordered_by_month["is_lead"]
-        print(indications_ordered_by_months)
+
+        main_places_indications = self.calculate_main_places_indications(indications)
+
+        main_places_indications_by_mrr = self.calculate_main_places_indications_by_mrr(
+            indications
+        )
+        # TODO: fazer o calculo de mrr por mes e os testes automatizados
+        return {
+            "funnel_indications": indications_by_type_ordered_by_month,
+            "indications_by_month": indications_by_type_ordered_by_month,
+            "new_mrr": None,
+            "progress_indications": calculate_progress_indications_type_by_year_group_by_month,
+            "indications_ordered_by_months": indications_ordered_by_months,
+            "five_main_places_indications": main_places_indications[:5],
+            "main_places_indications": main_places_indications,
+            "five_main_places_indications_by_mrr": main_places_indications_by_mrr[:5],
+            "main_places_indications_by_mrr": main_places_indications_by_mrr,
+        }
 
     def calculate_indications_type_by_year_group_by_month(self, indications):
 
@@ -161,3 +178,60 @@ class PerformanceService:
         }
 
         return progress
+
+    def calculate_main_places_indications(self, indications):
+        indications_data_frame = pandas.DataFrame(indications)
+
+        indications_data_frame["place"] = indications_data_frame.index + 1
+
+        grouped = (
+            indications_data_frame.groupby("origin").size().reset_index(name="quantity")
+        )
+
+        grouped["place"] = grouped.index + 1
+
+        grouped_sorted = grouped.sort_values(
+            by=["quantity", "place"], ascending=[False, False]
+        )
+        to_list = grouped_sorted.to_dict(orient="records")
+
+        return to_list
+
+    def calculate_main_places_indications_by_mrr(self, indications):
+        indications_data_frame = pandas.DataFrame(indications)
+
+        indications_data_frame["place"] = indications_data_frame.index + 1
+
+        grouped = (
+            indications_data_frame.groupby("origin").size().reset_index(name="count")
+        )
+
+        merged = pandas.merge(
+            grouped,
+            indications_data_frame[["origin", "minimum_fee", "place"]],
+            on="origin",
+            how="left",
+        ).drop_duplicates()
+
+        grouped_by_values = (
+            merged.groupby("origin")
+            .agg({"minimum_fee": "sum", "place": "min", "count": "first"})
+            .rename(columns={"minimum_fee": "mrr"})
+            .reset_index(names="origin")
+        )
+
+        sorted_by_aum = grouped_by_values.sort_values(
+            by=["mrr"], ascending=[False]
+        ).reset_index(drop=True)
+
+        sorted_by_aum["place"] = sorted_by_aum.index + 1
+
+        sorted_by_aum["mrr"] = sorted_by_aum["mrr"].apply(
+            lambda x: f"R${x:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+        )
+
+        to_list = sorted_by_aum.to_dict(orient="records")
+
+        return to_list
