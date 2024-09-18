@@ -14,6 +14,12 @@ class PerformanceService:
         if not indications:
             return {"message": "No indications found for this year"}
 
+        indications_goals_ordered_by_month = (
+            self.goals_repository.find_by_names_year_ordered_by_month(
+                "Indicações", year
+            )
+        )
+
         indications_by_type_ordered_by_month = (
             self.calculate_indications_type_by_year_group_by_month(indications)
         )
@@ -29,10 +35,13 @@ class PerformanceService:
         main_places_indications_by_mrr = self.calculate_main_places_indications_by_mrr(
             indications
         )
-        # TODO: fazer o calculo de mrr por mes e os testes automatizados
-        return {
+        # TODO: fazer o calculo de mrr
+        indications_data = {
             "funnel_indications": indications_by_type_ordered_by_month,
-            "indications_by_month": indications_by_type_ordered_by_month,
+            "indications_by_month": {
+                "actual": indications_by_type_ordered_by_month,
+                "goal": indications_goals_ordered_by_month,
+            },
             "new_mrr": None,
             "progress_indications": calculate_progress_indications_type_by_year_group_by_month,
             "indications_ordered_by_months": indications_ordered_by_months,
@@ -41,6 +50,8 @@ class PerformanceService:
             "five_main_places_indications_by_mrr": main_places_indications_by_mrr[:5],
             "main_places_indications_by_mrr": main_places_indications_by_mrr,
         }
+        print(indications_data)
+        return indications_data
 
     def calculate_indications_type_by_year_group_by_month(self, indications):
 
