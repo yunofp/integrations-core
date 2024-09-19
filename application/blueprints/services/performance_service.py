@@ -19,39 +19,75 @@ class PerformanceService:
                 "Indicações", year
             )
         )
+        mrr_indications_goals_ordered_by_month = (
+            self.goals_repository.find_by_names_year_ordered_by_month(
+                "Indicações MRR", year
+            )
+        )
 
         indications_by_type_ordered_by_month = (
             self.calculate_indications_type_by_year_group_by_month(indications)
         )
+
         calculate_progress_indications_type_by_year_group_by_month = (
             self.calculate_progress_indications_type_by_year_group_by_month(
-                indications_by_type_ordered_by_month
+                indications_by_type_ordered_by_month, year
             )
         )
-        indications_ordered_by_months = indications_by_type_ordered_by_month["is_lead"]
 
+        indications_ordered_by_months = indications_by_type_ordered_by_month["is_lead"]
         main_places_indications = self.calculate_main_places_indications(indications)
 
         main_places_indications_by_mrr = self.calculate_main_places_indications_by_mrr(
             indications
         )
-        # TODO: fazer o calculo de mrr
         indications_data = {
             "funnel_indications": indications_by_type_ordered_by_month,
-            "indications_by_month": {
-                "actual": indications_by_type_ordered_by_month,
+            "indications_ordered_by_months": {
+                "actual": indications_ordered_by_months,
                 "goal": indications_goals_ordered_by_month,
             },
-            "new_mrr": None,
+            "new_mrr_by_month": {
+                "actual": self.calculate_mrr_by_month(indications),
+                "goal": mrr_indications_goals_ordered_by_month,
+            },
             "progress_indications": calculate_progress_indications_type_by_year_group_by_month,
-            "indications_ordered_by_months": indications_ordered_by_months,
             "five_main_places_indications": main_places_indications[:5],
             "main_places_indications": main_places_indications,
             "five_main_places_indications_by_mrr": main_places_indications_by_mrr[:5],
             "main_places_indications_by_mrr": main_places_indications_by_mrr,
         }
-        print(indications_data)
         return indications_data
+
+    def calculate_mrr_by_month(self, indications):
+        indications_dataframe = pandas.DataFrame(indications)
+
+        indications_dataframe["closing_date"] = pandas.to_datetime(
+            indications_dataframe["closing_date"], errors="coerce"
+        )
+
+        indications_dataframe = indications_dataframe[
+            (indications_dataframe["closing_date"].notna())
+            & (indications_dataframe["minimum_fee"].notna())
+        ]
+
+        indications_dataframe["client_month"] = (
+            indications_dataframe["closing_date"].dt.strftime("%b").str.upper()
+        )
+
+        months_list = date_utils.get_months_list()
+
+        indications_dataframe["client_month"] = pandas.Categorical(
+            indications_dataframe["client_month"], categories=months_list, ordered=True
+        )
+
+        mrr_by_month = indications_dataframe.groupby("client_month")[
+            "minimum_fee"
+        ].sum()
+
+        mrr_by_month = mrr_by_month.reindex(months_list, fill_value=0)
+
+        return mrr_by_month.to_dict()
 
     def calculate_indications_type_by_year_group_by_month(self, indications):
 
@@ -69,15 +105,25 @@ class PerformanceService:
 
         months_list = date_utils.get_months_list()
 
-        indications_dataframe["lead_month"] = (
-            indications_dataframe["inclusion_date"].dt.strftime("%b").str.upper()
+        indications_dataframe["lead_month"] = indications_dataframe[
+            "inclusion_date"
+        ].dt.month
+        indications_dataframe["rd_month"] = indications_dataframe["rd_date"].dt.month
+        indications_dataframe["client_month"] = indications_dataframe[
+            "closing_date"
+        ].dt.month
+
+        month_map = {i + 1: months_list[i] for i in range(12)}
+
+        indications_dataframe["lead_month"] = indications_dataframe["lead_month"].map(
+            month_map
         )
-        indications_dataframe["rd_month"] = (
-            indications_dataframe["rd_date"].dt.strftime("%b").str.upper()
+        indications_dataframe["rd_month"] = indications_dataframe["rd_month"].map(
+            month_map
         )
-        indications_dataframe["client_month"] = (
-            indications_dataframe["closing_date"].dt.strftime("%b").str.upper()
-        )
+        indications_dataframe["client_month"] = indications_dataframe[
+            "client_month"
+        ].map(month_map)
 
         indications_dataframe["lead_month"] = pandas.Categorical(
             indications_dataframe["lead_month"], categories=months_list, ordered=True
@@ -123,10 +169,11 @@ class PerformanceService:
             .reindex(months_list, fill_value=0)
             .to_dict()
         )
+
         return indications_processed
 
     def calculate_progress_indications_type_by_year_group_by_month(
-        self, indications_processed
+        self, indications_processed, year
     ):
         current_month = datetime.now().strftime("%b").upper()
         previous_month = (
@@ -140,26 +187,20 @@ class PerformanceService:
         rd = indications_processed["is_rd"][current_month]
         clients = indications_processed["is_client"][current_month]
 
-        goals = self.goals_repository.find_by_names(["LEADS", "RD", "CLIENTS"])
+        leads_goal = self.goals_repository.find_by_names_year_ordered_by_month(
+            "LEADS", year
+        ).get(current_month, 0)
+        rd_goal = self.goals_repository.find_by_names_year_ordered_by_month(
+            "RDS", year
+        ).get(current_month, 0)
+        clients_goal = self.goals_repository.find_by_names_year_ordered_by_month(
+            "CLIENTES", year
+        ).get(current_month, 0)
 
-        leads_goal = next(
-            (goal for goal in goals if goal["name"] == "LEADS"),
-            {"name": "LEADS", "value": 0},
-        )
-
-        rd_goal = next(
-            (goal for goal in goals if goal["name"] == "RD"),
-            {"name": "RD", "value": 0},
-        )
-
-        clients_goal = next(
-            (goal for goal in goals if goal["name"] == "CLIENTS"),
-            {"name": "CLIENTS", "value": 0},
-        )
         progress = {}
-        progress["leads_goal"] = leads_goal["value"]
-        progress["rd_goal"] = rd_goal["value"]
-        progress["clients_goal"] = clients_goal["value"]
+        progress["leads_goal"] = leads_goal
+        progress["rd_goal"] = rd_goal
+        progress["clients_goal"] = clients_goal
 
         leads_previous_month_percentage = (
             leads - indications_processed["is_lead"][previous_month] / 100
@@ -173,17 +214,17 @@ class PerformanceService:
         progress = {
             "leads": {
                 "actual": leads,
-                "goal": leads_goal["value"],
+                "goal": leads_goal,
                 "previous": format_percentage(leads_previous_month_percentage),
             },
             "rds": {
                 "actual": rd,
-                "goal": rd_goal["value"],
+                "goal": rd_goal,
                 "previous": format_percentage(rd_previous_month_percentage),
             },
             "clients": {
                 "actual": clients,
-                "goal": clients_goal["value"],
+                "goal": clients_goal,
                 "previous": format_percentage(clients_previous_month_percentage),
             },
         }
@@ -237,7 +278,7 @@ class PerformanceService:
 
         sorted_by_aum["place"] = sorted_by_aum.index + 1
 
-        sorted_by_aum["mrr"] = sorted_by_aum["mrr"].apply(
+        sorted_by_aum["mrr_formatted"] = sorted_by_aum["mrr"].apply(
             lambda x: f"R${x:,.2f}".replace(",", "X")
             .replace(".", ",")
             .replace("X", ".")

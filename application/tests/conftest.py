@@ -4,6 +4,7 @@ from application.extensions import database
 from application.blueprints.services.contracts import ContractsService
 from application.blueprints.utils import date
 from application.blueprints.services.business_service import BusinessService
+from application.blueprints.services.performance_service import PerformanceService
 
 
 @pytest.fixture
@@ -19,6 +20,21 @@ def business_service():
         mock_goals_repository,
         mock_indications_repository,
     )
+
+
+@pytest.fixture
+def mock_indications_repository():
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_goals_repository():
+    return MagicMock()
+
+
+@pytest.fixture
+def performance_service(mock_indications_repository, mock_goals_repository):
+    return PerformanceService(mock_indications_repository, mock_goals_repository)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -51,7 +67,7 @@ def app_context(app):
 
 
 @pytest.fixture
-def service(app_context):
+def contract_service(app_context):
     profileRepository = Mock()
     profileRepository.insert_one.return_value = Mock(inserted_id=1)
     entriesRepository = Mock()

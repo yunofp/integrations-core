@@ -169,4 +169,4 @@ class PerformanceResource(Resource):
         self.performance_service = PerformanceService(
             self.indications_repository, self.goals_repository
         )
-        self.performance_service.process_all_indications_by_year(year)
+        return jsonify(self.performance_service.process_all_indications_by_year(year))
