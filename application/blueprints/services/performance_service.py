@@ -240,7 +240,7 @@ class PerformanceService:
             indications_data_frame.groupby("origin").size().reset_index(name="quantity")
         )
 
-        grouped["place"] = grouped.index + 1
+        grouped["place"] = range(1, len(grouped) + 1)
 
         grouped_sorted = grouped.sort_values(
             by=["quantity", "place"], ascending=[False, False]
@@ -269,14 +269,14 @@ class PerformanceService:
             merged.groupby("origin")
             .agg({"minimum_fee": "sum", "place": "min", "count": "first"})
             .rename(columns={"minimum_fee": "mrr"})
-            .reset_index(names="origin")
+            .reset_index()
         )
 
         sorted_by_aum = grouped_by_values.sort_values(
             by=["mrr"], ascending=[False]
         ).reset_index(drop=True)
 
-        sorted_by_aum["place"] = sorted_by_aum.index + 1
+        sorted_by_aum["place"] = range(1, len(sorted_by_aum) + 1)
 
         sorted_by_aum["mrr_formatted"] = sorted_by_aum["mrr"].apply(
             lambda x: f"R${x:,.2f}".replace(",", "X")

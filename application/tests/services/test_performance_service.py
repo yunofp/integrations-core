@@ -235,4 +235,119 @@ def test_calculate_mrr_by_month(performance_service, mock_indications_repository
     assert result["SEP"] == 3000
 
 
-# TODO: Corrigir posicoes de indicacoes e implementar mais alguns testes
+def test_calculate_positions_by_indications(
+    performance_service, mock_indications_repository
+):
+    indications_list = []
+    seven_month = datetime(2024, 7, 15).isoformat() + "Z"
+    eight_month = datetime(2024, 8, 15).isoformat() + "Z"
+    nine_month = datetime(2024, 9, 15).isoformat() + "Z"
+
+    for i in range(10):
+        indications_list.append(
+            generate_indication_data(
+                id="66e840019ee36cc719e4a5f7",
+                inclusion_date=seven_month,
+                minimum_fee=1000,
+                closing_date=seven_month,
+                origin="João",
+            )
+        )
+    for i in range(15):
+        indications_list.append(
+            generate_indication_data(
+                id="86e840019ee36cc719e4a5f7",
+                inclusion_date=nine_month,
+                minimum_fee=3000,
+                closing_date=nine_month,
+                origin="Adele",
+            )
+        )
+    for i in range(15):
+        indications_list.append(
+            generate_indication_data(
+                id="86e840019ee36cc719e4a5f7",
+                inclusion_date=nine_month,
+                minimum_fee=3000,
+                closing_date=nine_month,
+                origin="Adele Empate",
+            )
+        )
+    for i in range(25):
+        indications_list.append(
+            generate_indication_data(
+                id="86e840019ee36cc719e4a5f7",
+                inclusion_date=nine_month,
+                minimum_fee=3000,
+                closing_date=nine_month,
+                origin="Primeiro lugar",
+            )
+        )
+    mock_indications_repository.find_many_by_year.return_value = indications_list
+
+    result = performance_service.calculate_main_places_indications(indications_list)
+
+    expected_output = [
+        {"origin": "Primeiro lugar", "quantity": 25, "place": 4},
+        {"origin": "Adele Empate", "quantity": 15, "place": 2},
+        {"origin": "Adele", "quantity": 15, "place": 1},
+        {"origin": "João", "quantity": 10, "place": 3},
+    ]
+    assert result == expected_output
+
+
+def test_calculate_positions_by_indications(
+    performance_service, mock_indications_repository
+):
+    indications_list = []
+    seven_month = datetime(2024, 7, 15).isoformat() + "Z"
+    eight_month = datetime(2024, 8, 15).isoformat() + "Z"
+    nine_month = datetime(2024, 9, 15).isoformat() + "Z"
+
+    for i in range(2):
+        indications_list.append(
+            generate_indication_data(
+                id="66e840019ee36cc719e4a5f7",
+                inclusion_date=seven_month,
+                minimum_fee=1000,
+                closing_date=seven_month,
+                origin="João",
+                aum_estimated=0,
+            )
+        )
+    for i in range(2):
+        indications_list.append(
+            generate_indication_data(
+                id="86e840019ee36cc719e4a5f7",
+                inclusion_date=nine_month,
+                minimum_fee=3000,
+                closing_date=nine_month,
+                origin="Adele",
+                aum_estimated=0,
+            )
+        )
+
+    mock_indications_repository.find_many_by_year.return_value = indications_list
+
+    result = performance_service.calculate_main_places_indications_by_mrr(
+        indications_list
+    )
+
+    expected_output = [
+        {
+            "origin": "Adele",
+            "mrr": 6000,
+            "place": 1,
+            "count": 2,
+            "mrr_formatted": "R$6.000,00",
+        },
+        {
+            "origin": "João",
+            "mrr": 2000,
+            "place": 2,
+            "count": 2,
+            "mrr_formatted": "R$2.000,00",
+        },
+    ]
+
+    assert result == expected_output

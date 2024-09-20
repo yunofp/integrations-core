@@ -11,6 +11,8 @@ PYTEST=$(VENV_DIR)/bin/pytest
 $(VENV_DIR)/bin/activate: requirements.txt
 	@echo "Creating virtual environment..."
 	@python3 -m venv $(VENV_DIR)
+	@echo "Upgrading pip, setuptools, and wheel..."
+	@$(PIP) install --upgrade pip setuptools wheel
 	@echo "Installing dependencies..."
 	@$(PIP) install -r requirements.txt
 

@@ -132,6 +132,7 @@ class BusinessService:
         return self.indicationsRepository.get_indications_count_by_month(current_date)
 
     def get_new_business_values(self, year=None, type="GROW") -> dict:
+
         if not year:
             return {"error": "year not defined", "result": {}}
 
