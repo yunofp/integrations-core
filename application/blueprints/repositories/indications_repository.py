@@ -23,3 +23,14 @@ class IndicationsRepository:
             }
         )
         return indications_count
+
+    def find_many_by_year(self, year):
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+
+        indications = self.collection.find(
+            {
+                "inclusion_date": {"$gte": start_date, "$lt": end_date},
+            }
+        )
+        return list(indications)

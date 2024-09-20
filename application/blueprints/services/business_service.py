@@ -1,9 +1,7 @@
-from typing import Tuple, Dict, Any
-
 from application.blueprints.utils import date
 from bson.objectid import ObjectId
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
 
 class BusinessService:
@@ -134,6 +132,7 @@ class BusinessService:
         return self.indicationsRepository.get_indications_count_by_month(current_date)
 
     def get_new_business_values(self, year=None, type="GROW") -> dict:
+
         if not year:
             return {"error": "year not defined", "result": {}}
 

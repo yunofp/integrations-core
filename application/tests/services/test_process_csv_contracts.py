@@ -7,8 +7,10 @@ from application.tests.populate.csv_response import create_response_with_csv
 
 
 @freeze_time("2023-01-01")
-def test_should_read_and_insert_data_correctly(mocker, service, app):
-    contractsService, ProfileRepository, EntriesRepository, ContractRepository = service
+def test_should_read_and_insert_data_correctly(mocker, contract_service, app):
+    contractsService, ProfileRepository, EntriesRepository, ContractRepository = (
+        contract_service
+    )
 
     assert contractsService is not None, "contractsService is not initialized"
 

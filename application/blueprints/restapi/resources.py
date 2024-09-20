@@ -5,7 +5,6 @@ import threading
 from ..services.contracts import ContractsService
 from application.blueprints.services.business_service import BusinessService
 from application.blueprints.services.csv_service import CsvService
-from application.blueprints.utils import data_processing
 from ..clients import clicksignClient, zeevClient
 from ..repositories import (
     contractsRepository,
@@ -15,6 +14,7 @@ from ..repositories import (
     goal_repository,
     indications_repository,
 )
+from application.blueprints.services.performance_service import PerformanceService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -157,3 +157,16 @@ class NewBusinessResource(Resource):
                 mimetype="text/csv",
                 headers={"Content-Disposition": "attachment;filename=new_business.csv"},
             )
+
+
+class PerformanceResource(Resource):
+    def get(self):
+        year = request.args.get("year", default=None, type=int)
+        if not year:
+            return jsonify({"error": "Year is required"}), 400
+        self.indications_repository = indications_repository.IndicationsRepository()
+        self.goals_repository = goal_repository.GoalRepository()
+        self.performance_service = PerformanceService(
+            self.indications_repository, self.goals_repository
+        )
+        return jsonify(self.performance_service.process_all_indications_by_year(year))
