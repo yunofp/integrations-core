@@ -247,7 +247,7 @@ class ContractsService:
 
         jgvQualificationRequirementsResponse = (
             self.clickSignClient.addQualificationRequirements(
-                envelopeId, jgvSignerId, documentId
+                envelopeId, jgvSignerId, documentId, "contractee"
             )
         )
 
